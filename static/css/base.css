@@ -1,0 +1,35 @@
+body{
+    padding: 0px;
+    margin: 0px;
+    background: #f7f8fb;
+}
+.servers_list{
+    margin: 60px auto;
+    width: 75%;
+    background: white;
+    padding: 10px 25px 25px 25px;
+    border: 3px solid rgba(0,0,0,0.25);
+    border-radius: 20px;
+    text-align: center;
+}
+.servers_list thead{
+    font-size: 1.25em;
+    font-weight: bold;
+    font-family: sans-serif;
+    line-height: 2em;
+}
+.servers_list tbody{
+    font-size: 1em; 
+    font-family: sans-serif; 
+    line-height: 2.5em;
+}
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+.actions-btn{
+    font-weight: bold;
+    width: 1.9em;
+    cursor: pointer;
+    user-select: none;
+}

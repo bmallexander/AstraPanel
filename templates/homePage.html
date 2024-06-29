@@ -1,12 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home - {{ site_title }}</title>
-    <link rel="stylesheet" href="{{ url_for('static/css', filename='base.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
 </head>
+
 <body>
-    
+    {% include 'header.html' %}
+    <div style="width: 100%; display: flex;">
+        <div class="servers_list">
+            <table style="width: 100%; border: none;">
+                <thead>
+                    <tr>
+                        <th style="border: none;"></th>
+                        <th style="border: none;"></th>
+                        <th style="font-size: 1.45em; border: none;">My Servers</th>
+                        <th style="border: none;"></th>
+                    </tr>
+                    <tr><th style="border: none; height: 10px;"></th></tr>
+                    <tr><th style="border: none; height: 10px;"></th></tr>
+                    <tr><th style="border: none; height: 10px;"></th></tr>
+                    <tr>
+                        <td style="width: 25px; border-left: none; border-top: none;">Id</td>
+                        <td style="width: 100px; border-left: none; border-top: none;">Name</td>
+                        <td style="width: 250px; border-left: none; border-top: none;">SSH Cmd</td>
+                        <td style="width: 150px; border-left: none; border-top: none; border-right: none;">Actions</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for server in servers %}
+                    {% if (server.id + 1) % 2 == 0 %}
+                    <tr style="background: #fff">
+                    {% else %}
+                    <tr style="background: #eee">
+                    {% endif %}
+                        <td style="border-left: none; border-top: none; border-bottom: none;">{{ server.id + 1 }}.</td>
+                        <td style="border-left: none; border-top: none; border-bottom: none;">{{ server.container_name }} </td>
+                        <td style="border-left: none; border-top: none; border-bottom: none;">{{ server.ssh_session_line }}</td>
+                        <td style="border-left: none;border-top: none;border-bottom: none;border-right: none;display:flex;align-content: center;justify-content: center;align-items: center;flex-wrap: nowrap;">
+                            {% if server.status == 1 %}
+                            <div style="color: red;font-size: 1.5em;" class="actions-btn" title="Stop" onclick="stop('{{ user.username }}/{{ server.container_name }}')">⏸</div>
+                            {% else %}
+                            <div style="color: green;font-size: 1.5em;" class="actions-btn" title="Start" onclick="start('{{ user.username }}/{{ server.container_name }}')">⏵</div>
+                            {% endif %}
+                            <div style="color: orange;font-size: 1.5em;padding-left: 2px;padding-right: 1px;" class="actions-btn" title="Restart" onclick="restart('{{ user.username }}/{{ server.container_name }}')">↻</div>
+                            <div style="color: red;font-size: 1.2em;padding-left: 2px;" class="actions-btn" title="Delete" onclick="remove('{{ user.username }}/{{ server.container_name }}')">✖</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if servers_count == 0 %}
+                    <tr>
+                        <td style="border: none;"></td>
+                        <td style="border: none;"></td>
+                        <td style="color: gray; border: none;">You don't have any servers</td>
+                        <td style="border: none;"></td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/home.js') }}"></script>
 </body>
 </html>

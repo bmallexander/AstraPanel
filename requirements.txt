@@ -1,3 +1,5 @@
 flask
 docker
 python-dotenv
+Flask-Discord
+cryptography
