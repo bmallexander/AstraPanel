@@ -1,8 +1,8 @@
 window.add_working_model = function(){
-    var blur = document.createElement("div");
+    let blur = document.createElement("div");
     blur.setAttribute("style", "user-select:none;position: fixed; top:0px; left:0px; height:100%; width:100%; background:rgba(0,0,0,0.15); z-index: 9999999999999");
 
-    var css = document.createElement("style");
+    let css = document.createElement("style");
     css.innerHTML = `.animation-container {
         display: flex;
         position: absolute;
@@ -60,7 +60,7 @@ window.add_working_model = function(){
         }  
     }`;
 
-    var animation_container = document.createElement("div");
+    let animation_container = document.createElement("div");
     animation_container.className = "animation-container";
     animation_container.innerHTML = `<div class="letter X" style='color:white'>🔴</div>
                                     <div class="letter Y" style='color:white'>🟢</div>
@@ -69,30 +69,64 @@ window.add_working_model = function(){
     blur.append(animation_container);
     document.body.append(blur);
     document.body.append(css);
+    return [blur, css];
 }
 window.post = function(url, data) {
     return fetch(url, {method: "POST", headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
 }
+window.messagebox = function(data){
+    return alert(data.message);
+}
+window.promptbox = function(data){
+    return prompt(data.message);
+}
 async function restart(id){
-    window.add_working_model();
-    await window.post("/api/restart", {"id":id.split("/")[1]});
-    location.reload();
+    let t = window.add_working_model();
+    let data = await window.post("/api/restart", {"id":id.split("/")[1]});
+    if(data.success){
+        location.reload();
+    }else{
+        document.body.remove(t[0]);
+        document.body.remove(t[1]);
+        window.messagebox({type: 0, message: "We were unable to restart the machine.\nTry again"});
+    }
 }
 async function start(id){
-    window.add_working_model();
-    await window.post("/api/start", {"id":id.split("/")[1]});
-    location.reload();
+    let t = window.add_working_model();
+    let data = await window.post("/api/start", {"id":id.split("/")[1]});
+    if(data.success){
+        location.reload();
+    }else{
+        document.body.remove(t[0]);
+        document.body.remove(t[1]);
+        window.messagebox({type: 0, message: "We were unable to restart the machine.\nTry again"});
+    }
 }
 async function stop(id){
-    window.add_working_model();
-    await window.post("/api/stop", {"id":id.split("/")[1]});
-    location.reload();
+    let t = window.add_working_model();
+    let data = await window.post("/api/stop", {"id":id.split("/")[1]});
+    if(data.success){
+        location.reload();
+    }else{
+        document.body.remove(t[0]);
+        document.body.remove(t[1]);
+        window.messagebox({type: 0, message: "We were unable to restart the machine.\nTry again"});
+    }
 }
 async function remove(id){
-    var tmp = prompt("Type '" + id + "' in the box bellow to remove it");
+    let tmp = window.promptbox("Type '" + id + "' in the box bellow to remove it");
     if(tmp.trim() == id){
-        window.add_working_model();
-        await window.post("/api/delete", {"id":id.split("/")[1]});
-        location.reload();
+        let t = window.add_working_model();
+        let data = await window.post("/api/delete", {"id":id.split("/")[1]});
+        if(data.success){
+            location.reload();
+        }else{
+            document.body.remove(t[0]);
+            document.body.remove(t[1]);
+            window.messagebox({type: 0, message: "We were unable to restart the machine.\nTry again"});
+        }
     }
+}
+function open_console(id){
+    window.open(`${location.protocol}/xterm?containerid=${id.split("/")[1]}`, "_blank");
 }

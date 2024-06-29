@@ -3,3 +3,4 @@ docker
 python-dotenv
 Flask-Discord
 cryptography
+flask-socketio

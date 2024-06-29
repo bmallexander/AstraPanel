@@ -42,11 +42,33 @@
                         <td style="border-left: none; border-top: none; border-bottom: none;">{{ server.ssh_session_line }}</td>
                         <td style="border-left: none;border-top: none;border-bottom: none;border-right: none;display:flex;align-content: center;justify-content: center;align-items: center;flex-wrap: nowrap;">
                             {% if server.status == 1 %}
-                            <div style="color: red;font-size: 1.5em;" class="actions-btn" title="Stop" onclick="stop('{{ user.username }}/{{ server.container_name }}')">⏸</div>
+                            <div style="font-size: 1em;height: 2em;padding: 5px 0px 5px 5px;" class="actions-btn" title="Stop" onclick="stop('{{ user.username }}/{{ server.container_name }}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#000000" version="1.1" id="Capa_1" viewBox="0 0 478.125 478.125" xml:space="preserve" style="stroke: red;fill: red;">
+                                    <g>
+                                        <g>
+                                            <g>
+                                                <path d="M201.654,127.525h-31.9c-10.557,0-19.125,8.645-19.125,19.125v184.9c0,10.558,8.645,19.125,19.125,19.125h31.9     c10.557,0,19.125-8.645,19.125-19.125v-184.9C220.779,136.094,212.211,127.525,201.654,127.525z"></path>
+                                                <path d="M308.448,127.525h-31.9c-10.558,0-19.125,8.645-19.125,19.125v184.9c0,10.558,8.645,19.125,19.125,19.125h31.9     c10.557,0,19.125-8.645,19.125-19.125v-184.9C327.573,136.094,318.929,127.525,308.448,127.525z"></path>
+                                                
+                                            </g>
+                                        </g>
+                                    </g>
+                                </svg>
+                            </div>
                             {% else %}
-                            <div style="color: green;font-size: 1.5em;" class="actions-btn" title="Start" onclick="start('{{ user.username }}/{{ server.container_name }}')">⏵</div>
+                            <div style="font-size: 0.75em;height: 2em;padding: 5px 0px 5px 5px;" class="actions-btn" title="Start" onclick="start('{{ user.username }}/{{ server.container_name }}')">
+                                <svg id="Layer_1" version="1.1" viewBox="0 0 512 512" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="stroke: green;fill: green;">
+                                    <path d="M405.2,232.9L126.8,67.2c-3.4-2-6.9-3.2-10.9-3.2c-10.9,0-19.8,9-19.8,20H96v344h0.1c0,11,8.9,20,19.8,20  c4.1,0,7.5-1.4,11.2-3.4l278.1-165.5c6.6-5.5,10.8-13.8,10.8-23.1C416,246.7,411.8,238.5,405.2,232.9z"></path>
+                                </svg>
+                            </div>
                             {% endif %}
                             <div style="color: orange;font-size: 1.5em;padding-left: 2px;padding-right: 1px;" class="actions-btn" title="Restart" onclick="restart('{{ user.username }}/{{ server.container_name }}')">↻</div>
+                            <div style="color: red;font-size: 1em;height: 2em;padding: 5px;" class="actions-btn" title="Console" onclick="open_console('mobin_mazahery/bfbde2f27274')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" version="1.1" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" style="stroke: dodgerblue;">
+                                    <rect height="10.5" width="12.5" y="2.75" x="1.75"></rect>
+                                    <path d="m8.75 10.25h2.5m-6.5-4.5 2.5 2.25-2.5 2.25"></path>
+                                </svg>
+                            </div>
                             <div style="color: red;font-size: 1.2em;padding-left: 2px;" class="actions-btn" title="Delete" onclick="remove('{{ user.username }}/{{ server.container_name }}')">✖</div>
                         </td>
                     </tr>
