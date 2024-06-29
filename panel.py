@@ -4,6 +4,7 @@ import os
 import uuid
 from dataclasses import dataclass
 from dotenv import load_dotenv
+from terminal import terminal
 load_dotenv()
 
 from flask import Flask, render_template, redirect, url_for, request
@@ -13,12 +14,13 @@ from flask_discord import DiscordOAuth2Session, requires_authorization, Unauthor
 
 app.secret_key = "0xEssjBdpVDww8yoOhrrArNVIXsTx2QL13mA4AuhIawiCFvGpqSRk5fOFCcsoeXyB6"
 
-app.config["DISCORD_CLIENT_ID"] = "947541078343561336"
-app.config["DISCORD_CLIENT_SECRET"] = "8hMKZaG8490n7Yaw6kEcjSqui2fN1cto"
+app.config["DISCORD_CLIENT_ID"] = "" #Discord client Id from dev panel
+app.config["DISCORD_CLIENT_SECRET"] = "" 
 app.config["DISCORD_REDIRECT_URI"] = "https://127.0.0.1:5000/callback"
+TMATE_API_KEY  = "" #tmate api key(I already got one for astravm)
+
 SERVER_LIMIT   = 12
 SITE_TITLE     = "VPSManager"
-TMATE_API_KEY  = "tmk-oq6fUMZYbsDwK8EuaFdBvpkoDf"
 database_file  = 'database.txt'
 VM_IMAGES = ["ubuntu:22.04","ubuntu:20.04","debian:12","debian:11"]
 
