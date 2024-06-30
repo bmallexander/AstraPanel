@@ -2,6 +2,7 @@ body{
     padding: 0px;
     margin: 0px;
     background: #f7f8fb;
+    user-select: none;
 }
 .servers_list{
     margin: 60px auto;
@@ -32,4 +33,75 @@ table, th, td {
     width: 1.9em;
     cursor: pointer;
     user-select: none;
+}
+.createbtn{
+    float: right;
+    margin: -3px 15px 0px 15px;
+    font-size: 0.85em;
+    font-family: sans-serif;
+    border: 1px solid rgba(0,0,0,0.25);
+    background: whitesmoke;
+    padding: 7.5px 25px;
+    box-sizing: border-box;
+    border-radius: 30px;
+    cursor: pointer;
+    outline: none;
+    box-shadow: inset 0px 0px 4px 0px;
+}
+.createbtn:active, .createbtn:hover{
+    border: 1px solid #0071E3 !important;
+}
+.createbtn:hover {
+    background: rgba(0, 0, 0, 0.075) !important;
+}
+.os_list{
+    padding-left: 10px;
+    padding-right: 10px;
+    margin-left: 20px;
+    font-size: 1.05em;
+    border: 2px solid rgba(0,0,0,0.25);
+    border-radius: 25px;
+    cursor: pointer;
+    outline: none;
+}
+.os_list option{
+    font-size: 0.75em;
+}
+.os_list:active, .os_list:hover, .os_list:focus{
+    border: 2px solid #0071E3 !important;
+}
+.box1{
+    margin: 20px 0px 0px 0px;
+    font-family: sans-serif;
+    user-select: none;
+    font-size: 1.75em;
+}
+.box1[data-creating='']{
+    margin: 20px 0px 20px 0px !important;
+    filter: blur(1px);
+}
+.title {
+    font-weight: bold;
+    font-family: sans-serif;
+    font-size: 2.5em;
+    margin-top: 15px;
+}
+.new_term{
+    height: Calc(225px + 8px);
+    width: Calc(100% + 25px + 25px);
+    background: black;
+    margin: -8px -25px -25px -25px;
+    border-bottom-right-radius: 18px;
+    border-bottom-left-radius: 18px;
+    padding: 25px;
+    box-sizing: border-box;
+    font-size: 1.25em;
+    color: white;
+    transition: 0.5s;
+    display: flex;
+    flex-direction: column;
+    font-family: sans-serif;
+}
+.new_term span{
+    margin: 7.5px 0px;
 }

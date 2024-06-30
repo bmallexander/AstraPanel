@@ -74,59 +74,56 @@ window.add_working_model = function(){
 window.post = function(url, data) {
     return fetch(url, {method: "POST", headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
 }
-window.messagebox = function(data){
-    return alert(data.message);
-}
-window.promptbox = function(data){
-    return prompt(data.message);
-}
 async function restart(id){
     let t = window.add_working_model();
-    let data = await window.post("/api/restart", {"id":id.split("/")[1]});
+    let data = await (await window.post("/api/restart", {"id":id.split("/")[1]})).json();
     if(data.success){
         location.reload();
     }else{
-        document.body.remove(t[0]);
-        document.body.remove(t[1]);
+        document.body.removeChild(t[0]);
+        document.body.removeChild(t[1]);
         window.messagebox({type: 0, message: "We were unable to restart the machine.\nTry again"});
     }
 }
 async function start(id){
     let t = window.add_working_model();
-    let data = await window.post("/api/start", {"id":id.split("/")[1]});
+    let data = await (await window.post("/api/start", {"id":id.split("/")[1]})).json();
     if(data.success){
         location.reload();
     }else{
-        document.body.remove(t[0]);
-        document.body.remove(t[1]);
-        window.messagebox({type: 0, message: "We were unable to restart the machine.\nTry again"});
+        document.body.removeChild(t[0]);
+        document.body.removeChild(t[1]);
+        window.messagebox({type: 0, message: "We were unable to start the machine.\nTry again"});
     }
 }
 async function stop(id){
     let t = window.add_working_model();
-    let data = await window.post("/api/stop", {"id":id.split("/")[1]});
+    let data = await (await window.post("/api/stop", {"id":id.split("/")[1]})).json();
     if(data.success){
         location.reload();
     }else{
-        document.body.remove(t[0]);
-        document.body.remove(t[1]);
-        window.messagebox({type: 0, message: "We were unable to restart the machine.\nTry again"});
+        document.body.removeChild(t[0]);
+        document.body.removeChild(t[1]);
+        window.messagebox({type: 0, message: "We were unable to stop the machine.\nTry again"});
     }
 }
 async function remove(id){
-    let tmp = window.promptbox("Type '" + id + "' in the box bellow to remove it");
+    let tmp = window.promptbox({message: "Type '" + id + "' in the box bellow to remove it"});
     if(tmp.trim() == id){
         let t = window.add_working_model();
-        let data = await window.post("/api/delete", {"id":id.split("/")[1]});
+        let data = await (await window.post("/api/delete", {"id":id.split("/")[1]})).json();
         if(data.success){
             location.reload();
         }else{
-            document.body.remove(t[0]);
-            document.body.remove(t[1]);
-            window.messagebox({type: 0, message: "We were unable to restart the machine.\nTry again"});
+            document.body.removeChild(t[0]);
+            document.body.removeChild(t[1]);
+            window.messagebox({type: 0, message: "We were unable to delete the machine.\nTry again"});
         }
     }
 }
 function open_console(id){
     window.open(`${location.protocol}/xterm?containerid=${id.split("/")[1]}`, "_blank");
 }
+var script = document.createElement("script");
+script.src = "/static/js/message_popups.js";
+document.body.append(script);

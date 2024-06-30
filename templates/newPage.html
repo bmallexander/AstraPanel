@@ -1,13 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deploy New - {{ site_title }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
 </head>
+
 <body>
     {% include 'header.html' %}
-    
+    <div style="width: 100%; display: flex;">
+        <div class="servers_list" style="text-align: left;">
+            <label class="title">Create new server</label>
+            <hr style="margin-left: -25px;margin-right: -25px;border: 1px solid rgba(0,0,0,0.25);">
+            <div class="box1">
+                <label>Image:</label>
+                <select class="os_list">
+                    {% for image in images %}
+                    <option value="{{ image }}">{{ image }}</option>
+                    {% endfor %}
+                </select>
+                <button class="createbtn" onclick="create_vm()">Create</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        window.create_new_vm = function (image) {
+            window.socket = io.connect("/server_creation?image=" + image);
+            socket.on("creation_log", function (data) {
+                console.log(data);
+                if(data.redirect === undefined){
+                    window.add_new_log(data.output | data.error);
+                    if(!data.error === undefined){
+                        window.location.href = '/';
+                    }
+                }else{
+                    window.location.href = data.redirect;
+                }
+            });
+            window.add_new_log("Connected to the backend.", {color: "gray"});
+        }
+        function create_vm(){
+            let seperator = `<hr style="margin-left: -25px;margin-right: -25px;border: 1px solid rgba(0,0,0,0.25);">`;
+            let mainbox = document.querySelector(".servers_list");
+            let hr = document.createElement("hr");
+            mainbox.append(hr);
+            hr.outerHTML = seperator;
+            document.querySelector(".box1").dataset["creating"] = '';
+            document.querySelector("button").disabled = document.querySelector("select").disabled = true;
+            document.querySelector(".box1 > label").style.color = "gray";
+            let new_term = document.createElement("div");
+            mainbox.append(new_term);
+            new_term.className = "new_term";
+            window.add_new_log = function(text, data){
+                var span = document.createElement("span");
+                span.innerText = text;
+                if(data !== undefined){
+                    Object.keys(data).forEach(key => {
+                        span.style[key] = data[key];
+                    });
+                }
+                new_term.append(span);
+            }
+            window.create_new_vm(document.querySelector("select").value);
+        }
+    </script>
 </body>
+
 </html>

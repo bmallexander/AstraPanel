@@ -1,4 +1,4 @@
-import docker, re, os, uuid, pty, os, subprocess, select, termios, struct, fcntl, psutil
+import docker, re, os, uuid, pty, os, subprocess, select, termios, struct, fcntl
 from dataclasses import dataclass
 from flask_socketio import SocketIO
 from dotenv import load_dotenv
@@ -15,14 +15,29 @@ app.config["DISCORD_CLIENT_ID"]     = os.environ["DISCORD_CLIENT_ID"]
 app.config["DISCORD_CLIENT_SECRET"] = os.environ["DISCORD_CLIENT_SECRET"]
 app.config["DISCORD_REDIRECT_URI"]  = os.environ["DISCORD_REDIRECT_URI"]
 TMATE_API_KEY                       = os.environ["TMATE_API_KEY"]
-SERVER_LIMIT                        = os.environ["SERVER_LIMIT"]
+SERVER_LIMIT                        = int(os.environ["SERVER_LIMIT"])
 SITE_TITLE                          = os.environ["SITE_TITLE"]
 database_file                       = os.environ["database_file"]
-VM_IMAGES                           = os.environ["VM_IMAGES"]
+VM_IMAGES                           = os.environ["VM_IMAGES"].split(",")
 
 
 discord = DiscordOAuth2Session(app)
-socketio = SocketIO(app, ssl_context='adhoc')
+socketio = SocketIO(app, ping_interval=10, async_handlers=False)
+
+@dataclass
+class Server:
+    id: int
+    container_name: str
+    ssh_session_line: str
+    status: int
+    def __eq__(self, other):
+        return (self.container_name == other.container_name)
+    
+@dataclass
+class MsgColors:
+    success=0
+    error=1
+    warning=2
 
 def set_winsize(fd, row, col, xpix=0, ypix=0):
     winsize = struct.pack("HHHH", row, col, xpix, ypix)
@@ -49,8 +64,29 @@ def resize(data):
 
 def make_safe(cid):
     cid = cid.replace(" ", "")
-    cid = "".join(list(filter(str.isalnum, cid)))
+    cid = "".join(list(filter(lambda s: (str.isalnum(s) or s == "_"), cid)))
+    user = discord.fetch_user()
+    servers = get_user_servers(user.username)
+    if not Server(0, cid, "", 0) in servers:
+        cid = "\033[0;31m this_is_not_your_server \033[0m"
     return cid
+
+def custom_regex(str):
+    regex = [" - - ","["," ",":",":","]"," ", "/socket.io/?containerid=", "&", "HTTP/1.1"]
+    last_index = 0
+    removed_lenght = 0
+    for part in regex:
+        if part in str:
+            tmp_i = str.index(part)
+            if (removed_lenght + tmp_i) > last_index:
+                last_index = tmp_i
+                str = str[tmp_i + len(part):]
+                removed_lenght += tmp_i + len(part)
+            else:
+                return False
+        else:
+            return False
+    return True
 
 @socketio.on("connect", namespace="/pty")
 @requires_authorization
@@ -62,8 +98,14 @@ def connect(*args, **kwargs):
     session[f"fd-{container_id}"] = session[f"exited-{container_id}"] = session[f"child_pid-{container_id}"] = None
     (child_pid, fd) = pty.fork()
     if child_pid == 0:
-        subprocess.run([f"docker", "exec", "-it", container_id, "/bin/bash"])
-        exit("this is astravm vpsmanager terminal close exit code")
+        "”"
+        tmp_args = request.args.get("cmd_args",[])
+        if not tmp_args == []:
+            tmp_args = tmp_args.split(" ")
+            subprocess.run(tmp_args)
+        "”"
+        subprocess.run(["docker", "exec", "-it", container_id, "/bin/bash"])
+        return "this is astravm vpsmanager terminal close exit code"
     else:
         session[f"fd-{container_id}"] = fd
         session[f"child_pid-{container_id}"] = child_pid
@@ -83,7 +125,7 @@ def connect(*args, **kwargs):
                                 output = os.read(session[f"fd-{container_id}"], max_read_bytes).decode(
                                     errors="ignore"
                                 )
-                                if (("raise SystemExit(code)" in output) and ("SystemExit: this is astravm vpsmanager terminal close exit code" in output)):
+                                if "this is astravm vpsmanager terminal close exit code" in output or "ssl.SSLEOFError: EOF occurred in violation of protocol (_ssl.c:2426)" in output or custom_regex(output):
                                     socketio.emit("pty-output", {"output": "\n\n\n \033[0;31m Disconnected \033[0m", "close_con": True}, namespace="/pty")
                                 else:
                                     socketio.emit("pty-output", {"output": output}, namespace="/pty")
@@ -113,20 +155,6 @@ try:
 except docker.errors.DockerException as e:
     print(f"Error connecting to Docker: {e}")
     exit(1)
-
-
-@dataclass
-class Server:
-    id: int
-    container_name: str
-    ssh_session_line: str
-    status: int
-    
-@dataclass
-class MsgColors:
-    success=0
-    error=1
-    warning=2
 
 def get_user_servers(user):
     servers = []
@@ -167,12 +195,13 @@ def add_to_database(user, container_name, ssh_session_line):
         f.write(f"{user}|{container_name}|{ssh_session_line}\n")
         
 def remove_from_database(user, container_name):
-    with open(database_file, "w+") as f:
+    with open(database_file, "r") as f:
         data = f.read()
         for line in data.split("\n"):
             if line.startswith(f"{user}|{container_name}|"):
                 data = data.replace(line, "")
-        f.write(data)
+        with open(database_file, "w") as f2:
+            f2.write(data)
         
 def check_id(id):
     user = discord.fetch_user()
@@ -267,16 +296,23 @@ def get_ssh_session_line(container):
     return ssh_session_line
 
 def creationlog(msg):
+    socketio.sleep(0.01)
     socketio.emit("creation_log", {"output":msg}, namespace="/server_creation")
 
 def creationerror(data):
+    socketio.sleep(0.01)
     socketio.emit("creation_log", {"error":data}, namespace="/server_creation")
 
 @socketio.on("connect", namespace="/server_creation")
-def create_server_task(image):
+def create_server_task():
+    image = request.args.get("image")
+    if not image in VM_IMAGES:
+        creationerror({"message": f"Error: {image} is not in available images: {VM_IMAGES}", "message_color": MsgColors.warning})
+        return
     user = discord.fetch_user()
     if count_user_servers(user.username) >= SERVER_LIMIT:
         creationerror({"message": "Error: Server Limit-reached\n\nLogs:\nFailed to run apt update\nFailed to run apt install tmate\nFailed to run tmate -F\nError: Server Limit-reached", "message_color": MsgColors.warning})
+        return
 
     commands = f"""
     apt update && \
@@ -306,4 +342,4 @@ def create_server_task(image):
         creationerror({"message":"Something went wrong or the server is taking longer than expected. if this problem continues, Contact Support.", "message_color":MsgColors.error})
 
 if __name__ == "__main__":
-    app.run(ssl_context='adhoc', debug=True)
+    app.run(ssl_context=(os.environ["SSL_CERTIFICATE_FILE"], os.environ["SSL_KEY_FILE"]), debug=True)
