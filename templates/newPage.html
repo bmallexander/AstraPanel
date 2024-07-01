@@ -27,28 +27,33 @@
         </div>
     </div>
     <script>
+        window.get = function(url) {
+            return fetch(url);
+        }
         window.colors = {
             0: "green",
             1: "red",
             2: "lightblue"
         };
-        window.create_new_vm = function (image) {
-            window.socket = io.connect("/server_creation?image=" + image);
-            socket.on("creation_log", function (data) {
-                console.log(data);
-                if(data.redirect === undefined){
-                    if(data.error !== undefined){
-                        window.add_new_log(data.error.message, {color: window.colors[data.error.message_color]});
-                        window.location.href = '/';
-                    }
-                    window.add_new_log(data.output);
-                }else{
-                    window.location.href = data.redirect;
-                }
-            });
+        window.create_new_vm = async function (image) {
             window.add_new_log("Connected to the backend.", {color: "gray"});
+            var data = await (await window.get(`/server_creation?image=${image}`)).json();
+            if(data.error){
+                window.add_new_log(data.message, {color: window.colors[data.message_color]});
+                setTimeout(()=>{
+                    window.location.href = "/";
+                }, 10000);
+            }else{
+                var msgs = data.output.split("\n");
+                for(let msg of msgs){
+                    window.add_new_log(msg);
+                }
+                setTimeout(()=>{
+                    window.location.href = data.redirect;
+                }, 10000);
+            }
         }
-        function create_vm(){
+        async function create_vm(){
             let seperator = `<hr style="margin-left: -25px;margin-right: -25px;border: 1px solid rgba(0,0,0,0.25);">`;
             let mainbox = document.querySelector(".servers_list");
             let hr = document.createElement("hr");
@@ -70,7 +75,7 @@
                 }
                 new_term.append(span);
             }
-            window.create_new_vm(document.querySelector("select").value);
+            await window.create_new_vm(document.querySelector("select").value);
         }
     </script>
 </body>
