@@ -4,6 +4,11 @@ from flask_socketio import SocketIO
 from dotenv import load_dotenv
 load_dotenv()
 
+print("\nRunning startup.py\n")
+import startup
+startup.main()
+print("\nFinished running startup.py\n")
+
 from flask import Flask, render_template, redirect, url_for, request, session, copy_current_request_context
 app = Flask(__name__)
 
@@ -287,7 +292,7 @@ def get_ssh_session_line(container):
         return None
 
     ssh_session_line = None
-    max_attempts = 300000
+    max_attempts = 30000
     attempt = 0
 
     while attempt < max_attempts:
@@ -299,51 +304,68 @@ def get_ssh_session_line(container):
 
     return ssh_session_line
 
-def creationlog(msg):
-    socketio.sleep(0.01)
-    socketio.emit("creation_log", {"output":msg}, namespace="/server_creation")
-
-def creationerror(data):
-    socketio.sleep(0.01)
-    socketio.emit("creation_log", {"error":data}, namespace="/server_creation")
-
-@socketio.on("connect", namespace="/server_creation")
+@app.route("/server_creation")
 def create_server_task():
     image = request.args.get("image")
     if not image in VM_IMAGES:
-        creationerror({"message": f"Error: {image} is not in available images: {VM_IMAGES}", "message_color": MsgColors.warning})
-        return
+        return {"error": True, "message": f"Error: {image} is not in available images: {VM_IMAGES}", "message_color": MsgColors.warning}
     user = discord.fetch_user()
     if count_user_servers(user.username) >= SERVER_LIMIT:
-        creationerror({"message": "Error: Server Limit-reached\n\nLogs:\nFailed to run apt update\nFailed to run apt install tmate\nFailed to run tmate -F\nError: Server Limit-reached", "message_color": MsgColors.warning})
-        return
+        return {"error": True, "message": "Error: Server Limit-reached\n\nLogs:\nFailed to run apt update\nFailed to run apt install tmate\nFailed to run tmate -F\nError: Server Limit-reached", "message_color": MsgColors.warning}
 
-    commands = f"""
-    apt update && \
-    apt install -y tmate && \
-    tmate -k {TMATE_API_KEY} -n {uuid.uuid4()} -F
-    """
+    commands = """
+    function get_arch() {
+        arch=$(uname -m)
+        case $arch in
+            x86_64*) echo "amd64" ;;
+            armv6l*) echo "arm32v6" ;;
+            armv7l*) echo "arm32v7" ;;
+            aarch64*) echo "arm64v8" ;;
+            i686*) echo "i386" ;;
+            *) echo "unknown" ;;
+        esac
+    }
 
-    creationlog(f"Creating container using {image} ...")
+    # Get CPU architecture
+    arch=$(get_arch)
+    
+    # Base path for tmate binaries (replace with your actual path)
+    base_path="/mnt/tmates/tmate-2.4.0-static-linux-"
+
+    # Construct the path to the tmate binary based on architecture
+    tmate_path="${base_path}${arch}/tmate"
+    
+    # Check if architecture is valid and binary exists
+    if [ "$arch" == "unknown" ] || [ ! -f "$tmate_path" ]; then
+    echo "Error: Unsupported CPU architecture: $arch or tmate binary not found."
+    exit 1
+    fi
+
+    # Run the tmate binary
+    exec "$tmate_path" """ + f"-k {TMATE_API_KEY} -n {uuid.uuid4()} -F"
+
+    response = ""
+
+    response += f"Creating container using {image} ...\n"
 
     try:
-        container = client.containers.run(image, command="sh -c '{}'".format(commands), detach=True, tty=True)
+        container = client.containers.run(image, command="sh -c '{}'".format(commands), detach=True, tty=True, volumes={f"{os.getcwd()}/tmates": {'bind': '/mnt/tmates', 'mode': 'ro'}})
     except Exception as e:
-        creationerror({"message":f"Error creating container: {e}", "message_color": MsgColors.error})
+        return {"error": True, "message":f"Error creating container: {e}", "message_color": MsgColors.error}
 
-    creationlog("Container created ✅")
+    response += "Container created ✅\n"
 
-    creationlog("Checking machine's health ...")
+    response += "Checking machine's health ...\n"
 
     ssh_session_line = get_ssh_session_line(container)
     if ssh_session_line:
         add_to_database(user.username, container.name, ssh_session_line)
-        creationlog("Successfully created VPS")
-        socketio.emit("creation_log", {"redirect": url_for("home")}, namespace="/server_creation")
+        response += "Successfully created VPS\n"
+        return {"error": False, "output":response, "redirect": url_for("home")}
     else:
         container.stop()
         container.remove()
-        creationerror({"message":"Something went wrong or the server is taking longer than expected. if this problem continues, Contact Support.", "message_color":MsgColors.error})
+        return {"error": True, "message":"Something went wrong or the server is taking longer than expected. if this problem continues, Contact Support.", "message_color":MsgColors.error}
 
 if __name__ == "__main__":
     app.run(ssl_context=(os.environ["SSL_CERTIFICATE_FILE"], os.environ["SSL_KEY_FILE"]), debug=True)
