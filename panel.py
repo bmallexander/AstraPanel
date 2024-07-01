@@ -234,7 +234,8 @@ def restart():
         tmp = client.containers.get(data)
         tmp.restart(timeout=5)
         return {"success": True}
-    except:
+    except Exception as e:
+        print("-"*os.get_terminal_size().columns, e, "-"*os.get_terminal_size().columns)
         return {"success": False, "error": "Error! :|"}
     
 @app.route("/api/delete", methods=["POST"])
@@ -248,7 +249,8 @@ def delete():
         tmp.remove(v=True, force=True)
         remove_from_database(user.username, data)
         return {"success": True}
-    except:
+    except Exception as e:
+        print("-"*os.get_terminal_size().columns, e, "-"*os.get_terminal_size().columns)
         return {"success": False, "error": "Error! :|"}
     
 @app.route("/api/stop", methods=["POST"])
@@ -260,7 +262,8 @@ def stop():
         tmp = client.containers.get(data)
         tmp.stop(timeout=5)
         return {"success": True}
-    except:
+    except Exception as e:
+        print("-"*os.get_terminal_size().columns, e, "-"*os.get_terminal_size().columns)
         return {"success": False, "error": "Error! :|"}
     
 @app.route("/api/start", methods=["POST"])
@@ -272,7 +275,8 @@ def start():
         tmp = client.containers.get(data)
         tmp.start()
         return {"success": True}
-    except:
+    except Exception as e:
+        print("-"*os.get_terminal_size().columns, e, "-"*os.get_terminal_size().columns)
         return {"success": False, "error": "Error! :|"}
 
 def get_ssh_session_line(container):
