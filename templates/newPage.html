@@ -27,15 +27,21 @@
         </div>
     </div>
     <script>
+        window.colors = {
+            0: "green",
+            1: "red",
+            2: "lightblue"
+        };
         window.create_new_vm = function (image) {
             window.socket = io.connect("/server_creation?image=" + image);
             socket.on("creation_log", function (data) {
                 console.log(data);
                 if(data.redirect === undefined){
-                    window.add_new_log(data.output | data.error);
-                    if(!data.error === undefined){
+                    if(data.error !== undefined){
+                        window.add_new_log(data.error.message, {color: window.colors[data.error.message_color]});
                         window.location.href = '/';
                     }
+                    window.add_new_log(data.output);
                 }else{
                     window.location.href = data.redirect;
                 }
