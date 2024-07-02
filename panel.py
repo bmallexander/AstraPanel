@@ -292,7 +292,7 @@ def get_ssh_session_line(container):
         return None
 
     ssh_session_line = None
-    max_attempts = 30000
+    max_attempts = 3000
     attempt = 0
 
     while attempt < max_attempts:
@@ -313,59 +313,31 @@ def create_server_task():
     if count_user_servers(user.username) >= SERVER_LIMIT:
         return {"error": True, "message": "Error: Server Limit-reached\n\nLogs:\nFailed to run apt update\nFailed to run apt install tmate\nFailed to run tmate -F\nError: Server Limit-reached", "message_color": MsgColors.warning}
 
-    commands = """
-    function get_arch() {
-        arch=$(uname -m)
-        case $arch in
-            x86_64*) echo "amd64" ;;
-            armv6l*) echo "arm32v6" ;;
-            armv7l*) echo "arm32v7" ;;
-            aarch64*) echo "arm64v8" ;;
-            i686*) echo "i386" ;;
-            *) echo "unknown" ;;
-        esac
-    }
-
-    # Get CPU architecture
-    arch=$(get_arch)
-    
-    # Base path for tmate binaries (replace with your actual path)
-    base_path="/mnt/tmates/tmate-2.4.0-static-linux-"
-
-    # Construct the path to the tmate binary based on architecture
-    tmate_path="${base_path}${arch}/tmate"
-    
-    # Check if architecture is valid and binary exists
-    if [ "$arch" == "unknown" ] || [ ! -f "$tmate_path" ]; then
-    echo "Error: Unsupported CPU architecture: $arch or tmate binary not found."
-    exit 1
-    fi
-
-    # Run the tmate binary
-    exec "$tmate_path" """ + f"-k {TMATE_API_KEY} -n {uuid.uuid4()} -F"
+    commands = f"""/bin/sh /mnt/tmates/startup.sh -k {TMATE_API_KEY} -n {uuid.uuid4()} -F"""
 
     response = ""
 
     response += f"Creating container using {image} ...\n"
 
     try:
-        container = client.containers.run(image, command="sh -c '{}'".format(commands), detach=True, tty=True, volumes={f"{os.getcwd()}/tmates": {'bind': '/mnt/tmates', 'mode': 'ro'}})
+        container = client.containers.run(image, command="{}".format(commands), detach=True, tty=True, volumes={f"{os.getcwd()}/tmates": {'bind': '/mnt/tmates', 'mode': 'ro'}})
     except Exception as e:
         return {"error": True, "message":f"Error creating container: {e}", "message_color": MsgColors.error}
 
     response += "Container created ✅\n"
 
     response += "Checking machine's health ...\n"
-
+    
     ssh_session_line = get_ssh_session_line(container)
     if ssh_session_line:
         add_to_database(user.username, container.name, ssh_session_line)
         response += "Successfully created VPS\n"
         return {"error": False, "output":response, "redirect": url_for("home")}
     else:
+        container_logs = container.logs().decode("utf-8")
         container.stop()
         container.remove()
-        return {"error": True, "message":"Something went wrong or the server is taking longer than expected. if this problem continues, Contact Support.", "message_color":MsgColors.error}
+        return {"error": True, "message":"Something went wrong or the server is taking longer than expected. if this problem continues, Contact Support." + "\n\nTechnical Logs: " + container_logs, "message_color":MsgColors.error}
 
 if __name__ == "__main__":
     app.run(ssl_context=(os.environ["SSL_CERTIFICATE_FILE"], os.environ["SSL_KEY_FILE"]), debug=True)
