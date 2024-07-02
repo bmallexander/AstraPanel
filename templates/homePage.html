@@ -84,6 +84,12 @@
                 </tbody>
             </table>
         </div>
+        
+        <div class="currency_display" style="margin-left: auto; margin-right: 20px;">
+            <h2>Currency Balance</h2>
+            <p>Your current balance: {{ currency_balance }}</p>
+            <!-- Add more styling or information about currency here -->
+        </div>
     </div>
     <script src="{{ url_for('static', filename='js/home.js') }}"></script>
 </body>

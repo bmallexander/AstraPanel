@@ -2,6 +2,7 @@ import docker, re, os, uuid, pty, os, subprocess, select, termios, struct, fcntl
 from dataclasses import dataclass
 from flask_socketio import SocketIO
 from dotenv import load_dotenv
+from CurrencyHandler import CurrencyManager
 load_dotenv()
 
 print("\nRunning startup.py\n")
@@ -28,6 +29,8 @@ VM_IMAGES                           = os.environ["VM_IMAGES"].split(",")
 
 discord = DiscordOAuth2Session(app)
 socketio = SocketIO(app, ping_interval=10, async_handlers=False)
+
+currency_manager = CurrencyManager('user_currencies.json')
 
 @dataclass
 class Server:
@@ -155,6 +158,13 @@ def login():
 def redirect_unauthorized(e):
     return redirect(url_for("login"))
 
+@app.route("/earn_currency")
+@requires_authorization
+def earn_currency():
+    user = discord.fetch_user()  
+    currency_manager.update_currency(user.id, 10)  
+    return redirect(url_for('home'))  
+
 try:
     client = docker.from_env()
 except docker.errors.DockerException as e:
@@ -219,9 +229,10 @@ def base():
 @app.route("/home")
 @requires_authorization
 def home():
-    user = discord.fetch_user()
+    user = discord.fetch_user()  # Assuming discord is initialized somewhere
     servers = get_user_servers(user.username)
-    return render_template("homePage.html", site_title=SITE_TITLE, servers=servers, user=user, servers_count=len(servers))
+    currency_balance = currency_manager.get_currency(user.id)  # Fetch user's currency balance
+    return render_template("homePage.html", site_title=SITE_TITLE, servers=servers, user=user, servers_count=len(servers), currency_balance=currency_balance)
     
 @app.route("/create_new")
 @requires_authorization
