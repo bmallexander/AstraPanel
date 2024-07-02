@@ -3,6 +3,10 @@ from dataclasses import dataclass
 from flask_socketio import SocketIO
 from dotenv import load_dotenv
 from CurrencyHandler import CurrencyManager
+from datetime import datetime, timedelta
+from flask_discord import DiscordOAuth2Session, requires_authorization, Unauthorized
+from flask import jsonify, session
+
 load_dotenv()
 
 print("\nRunning startup.py\n")
@@ -30,6 +34,7 @@ VM_IMAGES                           = os.environ["VM_IMAGES"].split(",")
 discord = DiscordOAuth2Session(app)
 socketio = SocketIO(app, ping_interval=10, async_handlers=False)
 
+last_earn_time = {}
 currency_manager = CurrencyManager('user_currencies.json')
 
 @dataclass
@@ -158,13 +163,6 @@ def login():
 def redirect_unauthorized(e):
     return redirect(url_for("login"))
 
-@app.route("/earn_currency")
-@requires_authorization
-def earn_currency():
-    user = discord.fetch_user()  
-    currency_manager.update_currency(user.id, 10)  
-    return redirect(url_for('home'))  
-
 try:
     client = docker.from_env()
 except docker.errors.DockerException as e:
@@ -239,6 +237,32 @@ def home():
 def create_new():
     user = discord.fetch_user()
     return render_template("newPage.html", site_title=SITE_TITLE, user=user, images=VM_IMAGES)
+
+@app.route("/earn-coins", methods=["GET"])
+def earn_coins():
+    discord_user_id = session.get('DISCORD_USER_ID')
+    discord_oauth2_token = session.get('DISCORD_OAUTH2_TOKEN')
+
+    if discord_user_id is None or discord_oauth2_token is None:
+        return redirect(url_for("login"))
+
+    user_id = discord_user_id
+
+    # Check last earning time for authenticated users only
+    last_time = last_earn_time.get(user_id)
+    if last_time and datetime.now() - last_time < timedelta(minutes=3):
+        time_left = int((last_time + timedelta(minutes=3) - datetime.now()).total_seconds())
+        return render_template("earnCoins.html", time_left=time_left)
+
+    # Update user's coins and store last earning time
+    currency_manager.update_currency(user_id, 5)
+    last_earn_time[user_id] = datetime.now()
+
+    # Calculate time left until next earning (3 minutes cooldown)
+    time_left = 180  
+
+    return render_template("earnCoins.html", time_left=time_left)
+
 
 
 @app.route("/api/restart", methods=["POST"])
