@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deploy New - {{ site_title }}</title>
+    <!-- CSS stylesheets -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler-flags.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler-payments.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler-vendors.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
+    <style>
+        /* Additional styles specific to this page */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #000000;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .servers_list {
+            background-color: #1e1e2d;
+            color: white;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        hr {
+            margin: 10px -25px;
+            border: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .box1 {
+            margin-top: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+
+        select,
+        button {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background-color: #333;
+            color: white;
+            margin-bottom: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button.createbtn {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        button.createbtn:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        .new_term {
+            margin-top: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            color: #ccc;
+        }
+
+        .new_term span {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <header class="navbar navbar-expand-md d-print-none" data-bs-theme="dark">
+        <div class="container-xl">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu"
+                aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                <a href=".">
+                    AstraPanel
+                </a>
+            </div>
+ 
+</header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="servers_list">
+            <label class="title">Create new server</label>
+            <hr>
+            <div class="box1">
+                <label>Image:</label>
+                <select class="os_list">
+                    {% for image in images %}
+                    <option value="{{ image }}">{{ image }}</option>
+                    {% endfor %}
+                </select>
+                <button class="createbtn" onclick="create_vm()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <script>
+        window.get = function (url) {
+            return fetch(url);
+        }
+        window.colors = {
+            0: "green",
+            1: "red",
+            2: "lightblue"
+        };
+        window.create_new_vm = async function (image) {
+            window.add_new_log("Connected to the backend.", { color: "gray" });
+            var data = await (await window.get(`/server_creation?image=${image}`)).json();
+            if (data.error) {
+                window.add_new_log(data.message, { color: window.colors[data.message_color] });
+                setTimeout(() => {
+                    window.location.href = "/";
+                }, 10000);
+            } else {
+                var msgs = data.output.split("\n");
+                for (let msg of msgs) {
+                    window.add_new_log(msg);
+                }
+                setTimeout(() => {
+                    window.location.href = data.redirect;
+                }, 10000);
+            }
+        }
+        async function create_vm() {
+            let mainbox = document.querySelector(".servers_list");
+            let hr = document.createElement("hr");
+            mainbox.append(hr);
+            document.querySelector(".box1").dataset["creating"] = '';
+            document.querySelector("button").disabled = document.querySelector("select").disabled = true;
+            document.querySelector(".box1 > label").style.color = "gray";
+            let new_term = document.createElement("div");
+            mainbox.append(new_term);
+            new_term.className = "new_term";
+            window.add_new_log = function (text, data) {
+                var span = document.createElement("span");
+                span.innerText = text;
+                if (data !== undefined) {
+                    Object.keys(data).forEach(key => {
+                        span.style[key] = data[key];
+                    });
+                }
+                new_term.append(span);
+            }
+            await window.create_new_vm(document.querySelector("select").value);
+        }
+    </script>
+
+</body>
+
+</html>
