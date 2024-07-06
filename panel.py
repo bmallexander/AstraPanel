@@ -6,6 +6,7 @@ from CurrencyHandler import CurrencyManager
 from datetime import datetime, timedelta
 from flask_discord import DiscordOAuth2Session, requires_authorization, Unauthorized
 from flask import jsonify, session
+import json
 
 load_dotenv()
 
@@ -232,6 +233,61 @@ def home():
     currency_balance = currency_manager.get_currency(user.id)  # Fetch user's currency balance
     return render_template("homePage.html", site_title=SITE_TITLE, servers=servers, user=user, servers_count=len(servers), currency_balance=currency_balance)
     
+
+
+def load_coupons():
+    with open('coupons.json', 'r') as f:
+        return json.load(f)
+
+
+@app.route("/coupons")
+def coupons():
+    coupons_data = load_coupons()
+    return render_template("couponsPage.html", site_title=SITE_TITLE, coupons=coupons_data["coupons"])
+
+@app.route("/claim_coupon", methods=["POST"])
+@requires_authorization
+def claim_coupon():
+    coupon_code = request.json.get("coupon_code")
+    user = discord.fetch_user()  # Assuming Discord authentication is used
+    
+    # Load coupons from JSON file
+    coupons_data = load_coupons()  # Ensure load_coupons() returns the correct structure
+    coupons = coupons_data.get("coupons", {})  # Get the "coupons" dictionary from loaded data
+    
+    # Check if coupon code exists
+    if coupon_code in coupons:
+        coupon_details = coupons[coupon_code]
+        
+        # Check if the coupon has expired
+        if datetime.strptime(coupon_details["valid_until"], "%Y-%m-%d").date() < datetime.today().date():
+            return jsonify({"success": False, "message": "Coupon has expired."})
+        
+        # Check if the coupon has reached its maximum claims
+        if len(coupon_details["claimed_by"]) >= coupon_details["max_claims"]:
+            return jsonify({"success": False, "message": "Coupon has reached its maximum claims."})
+        
+        # Check if the user has already claimed the coupon
+        if user.id in coupon_details["claimed_by"]:
+            return jsonify({"success": False, "message": "You have already claimed this coupon."})
+        
+        # If all checks pass, redeem the coupon
+        coupon_details["claimed_by"].append(user.id)
+        
+        # Update the coupons.json file
+        with open("coupons.json", "w") as f:
+            json.dump(coupons_data, f, indent=4)
+        
+        # Perform any additional actions like adding currency to the user's account
+        currency_manager.update_currency(user.id, coupon_details["amount"])
+        
+        return jsonify({"success": True, "message": f"You have successfully claimed {coupon_details['amount']} units."})
+    else:
+        return jsonify({"success": False, "message": "Invalid coupon code."})
+    
+
+    
+    
 @app.route("/create_new")
 @requires_authorization
 def create_new():
@@ -375,4 +431,4 @@ def create_server_task():
         return {"error": True, "message":"Something went wrong or the server is taking longer than expected. if this problem continues, Contact Support." + "\n\nTechnical Logs: " + container_logs, "message_color":MsgColors.error}
 
 if __name__ == "__main__":
-    app.run(ssl_context=(os.environ["SSL_CERTIFICATE_FILE"], os.environ["SSL_KEY_FILE"]), debug=True)
+    app.run(ssl_context=(os.environ["SSL_CERTIFICATE_FILE"], os.environ["SSL_KEY_FILE"]), debug=True, port=5001)

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redeem Coupon</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Redeem Coupon</h1>
+    <form id="couponForm">
+        <label for="couponCode">Enter Coupon Code:</label>
+        <input type="text" id="couponCode" name="couponCode" required>
+        <button type="submit">Redeem</button>
+    </form>
+
+    <div id="message"></div>
+
+    <script>
+        const form = document.getElementById("couponForm");
+        const messageDiv = document.getElementById("message");
+
+        form.addEventListener("submit", function(event) {
+            event.preventDefault();
+            const couponCode = document.getElementById("couponCode").value.trim();
+            
+            axios.post("/claim_coupon", { coupon_code: couponCode })
+                .then(function(response) {
+                    const data = response.data;
+                    if (data.success) {
+                        messageDiv.innerHTML = `<p style="color: green;">${data.message}</p>`;
+                    } else {
+                        messageDiv.innerHTML = `<p style="color: red;">${data.message}</p>`;
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error:', error);
+                    messageDiv.innerHTML = `<p style="color: red;">An error occurred. Please try again later.</p>`;
+                });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+    "coupons": {
+        "ABCD1234": {
+            "coupon_code": "ABCD1234",
+            "valid_until": "2024-12-31",
+            "max_claims": 100,
+            "claimed_by": [
+                1145384422150000753
+            ],
+            "amount": 50
+        },
+        "EFGH5678": {
+            "coupon_code": "EFGH5678",
+            "valid_until": "2025-06-30",
+            "max_claims": 50,
+            "claimed_by": [
+                1145384422150000753
+            ],
+            "amount": 25
+        }
+    }
+}
