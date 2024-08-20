@@ -36,6 +36,7 @@ discord = DiscordOAuth2Session(app)
 socketio = SocketIO(app, ping_interval=10, async_handlers=False)
 
 last_earn_time = {}
+billing_intervals = {}
 currency_manager = CurrencyManager('user_currencies.json')
 
 @dataclass
@@ -56,6 +57,33 @@ class MsgColors:
 def set_winsize(fd, row, col, xpix=0, ypix=0):
     winsize = struct.pack("HHHH", row, col, xpix, ypix)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
+
+def bill_users_for_running_vps():
+    """Bills users 1 credit per minute for each running VPS."""
+    while True:
+        socketio.sleep(60)  # Check every 60 seconds
+        
+        try:
+            with open(database_file, 'r') as f:
+                for line in f:
+                    user, container_name, ssh_session_line = line.strip().split('|')
+                    container = client.containers.get(container_name)
+                    
+                    if container.status == "running":
+                        user_id = discord.fetch_user().id
+                        last_billed = billing_intervals.get(container_name, datetime.now())
+                        if datetime.now() - last_billed >= timedelta(minutes=1):
+                            # Deduct 1 credit per minute
+                            currency_manager.update_currency(user_id, -1)
+                            billing_intervals[container_name] = datetime.now()
+
+        except Exception as e:
+            print(f"Error in billing process: {e}")
+
+socketio.start_background_task(bill_users_for_running_vps)
+
+
+
 
 @app.route("/xterm")
 @requires_authorization
@@ -370,6 +398,10 @@ def start():
         if not check_id(data): return {"success": False, "error": "Error! :|"}
         tmp = client.containers.get(data)
         tmp.start()
+        
+        # Mark the start time for billing purposes
+        billing_intervals[data] = datetime.now()
+        
         return {"success": True}
     except Exception as e:
         print("-"*os.get_terminal_size().columns, e, "-"*os.get_terminal_size().columns)
