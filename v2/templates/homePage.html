@@ -237,5 +237,64 @@
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
     <script src="/static/js/home.js"></script>
 
+
+    <script>
+      let term;
+      const fitAddon = new FitAddon.FitAddon();
+      const socket = io.connect("/pty?containerid={{ CONTAINER_ID }}"); // Adjust container ID accordingly
+  
+      function openConsole(containerName) {
+          document.getElementById('consoleModal').style.display = 'flex';
+          initializeTerminal();
+      }
+  
+      function closeConsole() {
+          document.getElementById('consoleModal').style.display = 'none';
+          if (term) {
+              term.dispose();
+          }
+      }
+  
+      function initializeTerminal() {
+          term = new Terminal({
+              cursorBlink: true,
+              macOptionIsMeta: true,
+              scrollback: true,
+          });
+          term.loadAddon(fitAddon);
+          term.loadAddon(new WebLinksAddon.WebLinksAddon());
+          term.loadAddon(new SearchAddon.SearchAddon());
+          term.open(document.getElementById('terminal'));
+          fitAddon.fit();
+          term.resize(15, 50);
+          term.writeln("Welcome to {{ SITE_TITLE }}");
+          term.writeln('');
+          term.writeln("You can copy with ctrl+shift+c");
+          term.writeln("You can paste with ctrl+shift+v");
+          term.writeln('');
+          term.onData((data) => {
+              socket.emit("pty-input", { input: data });
+          });
+  
+          socket.on("pty-output", function (data) {
+              if (data.close_con === true) {
+                  socket.disconnect();
+                  closeConsole();
+              }
+              term.write(data.output);
+          });
+  
+          socket.on("connect", () => {
+              term.writeln("Connected to the server.");
+          });
+  
+          socket.on("disconnect", () => {
+              term.writeln("Disconnected from the server.");
+          });
+  
+          window.onresize = () => fitAddon.fit();
+      }
+  </script>
+
 </body>
 </html>
