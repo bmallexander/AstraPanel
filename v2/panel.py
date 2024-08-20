@@ -31,7 +31,6 @@ SITE_TITLE                          = os.environ["SITE_TITLE"]
 database_file                       = os.environ["database_file"]
 VM_IMAGES                           = os.environ["VM_IMAGES"].split(",")
 
-ADMIN_DISCORD_ID = os.environ.get("ADMIN_DISCORD_ID")
 
 
 
@@ -326,31 +325,6 @@ def claim_coupon():
         return jsonify({"success": False, "message": "Invalid coupon code."})
     
 
-@app.route("/admin")
-@requires_authorization
-def admin_panel():
-    user = discord.fetch_user()
-    
-    # Check if user is an admin
-    if not user_is_admin(user.id):
-        return jsonify({"error": "Access denied."}), 403
-
-    # Fetch and display all server information
-    all_servers = []
-    if os.path.exists(database_file):
-        with open(database_file, 'r') as f:
-            for line in f:
-                l = line.split("|")
-                tmp = client.containers.get(l[1])
-                all_servers.append({
-                    "username": l[0],
-                    "container_name": l[1],
-                    "ssh_session_line": l[2],
-                    "status": tmp.status,
-                    "suspended": bool(int(l[3])) if len(l) > 3 else False
-                })
-
-    return render_template("adminPage.html", servers=all_servers, site_title="Admin Panel")
 
     
     
@@ -386,57 +360,6 @@ def earn_coins():
     return render_template("earnCoins.html", time_left=time_left)
 
 
-@app.route("/api/suspend", methods=["POST"])
-@requires_authorization
-def suspend_server():
-    user = discord.fetch_user()
-    
-    # Admin check
-    if not user_is_admin(user.id):
-        return jsonify({"error": "Access denied."}), 403
-    
-    data = request.get_json()["container_name"]
-    if not check_id(data): return {"success": False, "error": "Error! :|"}
-    
-    # Suspend the server
-    with open(database_file, 'r') as f:
-        lines = f.readlines()
-    with open(database_file, 'w') as f:
-        for line in lines:
-            if line.split("|")[1] == data:
-                parts = line.strip().split("|")
-                parts[3] = '1'  # Mark as suspended
-                f.write("|".join(parts) + "\n")
-            else:
-                f.write(line)
-    
-    return {"success": True, "message": "Server suspended"}
-
-@app.route("/api/unsuspend", methods=["POST"])
-@requires_authorization
-def unsuspend_server():
-    user = discord.fetch_user()
-    
-    # Admin check
-    if not user_is_admin(user.id):
-        return jsonify({"error": "Access denied."}), 403
-    
-    data = request.get_json()["container_name"]
-    if not check_id(data): return {"success": False, "error": "Error! :|"}
-    
-    # Unsuspend the server
-    with open(database_file, 'r') as f:
-        lines = f.readlines()
-    with open(database_file, 'w') as f:
-        for line in lines:
-            if line.split("|")[1] == data:
-                parts = line.strip().split("|")
-                parts[3] = '0'  # Mark as unsuspended
-                f.write("|".join(parts) + "\n")
-            else:
-                f.write(line)
-    
-    return {"success": True, "message": "Server unsuspended"}
 
 
 
