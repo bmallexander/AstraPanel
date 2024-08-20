@@ -31,6 +31,9 @@ SITE_TITLE                          = os.environ["SITE_TITLE"]
 database_file                       = os.environ["database_file"]
 VM_IMAGES                           = os.environ["VM_IMAGES"].split(",")
 
+ADMIN_DISCORD_ID = os.environ.get("ADMIN_DISCORD_ID")
+
+
 
 discord = DiscordOAuth2Session(app)
 socketio = SocketIO(app, ping_interval=10, async_handlers=False)
@@ -39,14 +42,20 @@ last_earn_time = {}
 billing_intervals = {}
 currency_manager = CurrencyManager('user_currencies.json')
 
+def user_is_admin(discord_user_id):
+    """Check if the user is an admin based on their Discord ID."""
+    return str(discord_user_id) == str(ADMIN_DISCORD_ID)
+
 @dataclass
 class Server:
     id: int
     container_name: str
     ssh_session_line: str
     status: int
+    suspended: bool = False  
     def __eq__(self, other):
         return (self.container_name == other.container_name)
+
     
 @dataclass
 class MsgColors:
@@ -207,10 +216,16 @@ def get_user_servers(user):
         for line in f:
             if line.startswith(user):
                 l = line.split("|")
-                tmp = client.containers.get(l[1])
-                servers.append(Server(id=count, container_name=l[1], ssh_session_line=l[2], status=(1 if tmp.status == "running" else 0)))
+                container_name = l[1]
+                suspended = bool(int(l[3])) if len(l) > 3 else False
+                tmp = client.containers.get(container_name)
+                servers.append(Server(id=count, container_name=container_name, ssh_session_line=l[2], status=(1 if tmp.status == "running" else 0), suspended=suspended))
                 count += 1
     return servers
+
+def add_to_database(user, container_name, ssh_session_line, suspended=False):
+    with open(database_file, 'a') as f:
+        f.write(f"{user}|{container_name}|{ssh_session_line}|{int(suspended)}\n")
 
 def get_user_server_id(user):
     servers = []
@@ -232,10 +247,7 @@ def count_user_servers(user):
                 count += 1
     return count
     
-def add_to_database(user, container_name, ssh_session_line):
-    with open(database_file, 'a') as f:
-        f.write(f"{user}|{container_name}|{ssh_session_line}\n")
-        
+
 def remove_from_database(user, container_name):
     with open(database_file, "r") as f:
         data = f.read()
@@ -314,6 +326,32 @@ def claim_coupon():
         return jsonify({"success": False, "message": "Invalid coupon code."})
     
 
+@app.route("/admin")
+@requires_authorization
+def admin_panel():
+    user = discord.fetch_user()
+    
+    # Check if user is an admin
+    if not user_is_admin(user.id):
+        return jsonify({"error": "Access denied."}), 403
+
+    # Fetch and display all server information
+    all_servers = []
+    if os.path.exists(database_file):
+        with open(database_file, 'r') as f:
+            for line in f:
+                l = line.split("|")
+                tmp = client.containers.get(l[1])
+                all_servers.append({
+                    "username": l[0],
+                    "container_name": l[1],
+                    "ssh_session_line": l[2],
+                    "status": tmp.status,
+                    "suspended": bool(int(l[3])) if len(l) > 3 else False
+                })
+
+    return render_template("adminPage.html", servers=all_servers, site_title="Admin Panel")
+
     
     
 @app.route("/create_new")
@@ -346,6 +384,59 @@ def earn_coins():
     time_left = 180  
 
     return render_template("earnCoins.html", time_left=time_left)
+
+
+@app.route("/api/suspend", methods=["POST"])
+@requires_authorization
+def suspend_server():
+    user = discord.fetch_user()
+    
+    # Admin check
+    if not user_is_admin(user.id):
+        return jsonify({"error": "Access denied."}), 403
+    
+    data = request.get_json()["container_name"]
+    if not check_id(data): return {"success": False, "error": "Error! :|"}
+    
+    # Suspend the server
+    with open(database_file, 'r') as f:
+        lines = f.readlines()
+    with open(database_file, 'w') as f:
+        for line in lines:
+            if line.split("|")[1] == data:
+                parts = line.strip().split("|")
+                parts[3] = '1'  # Mark as suspended
+                f.write("|".join(parts) + "\n")
+            else:
+                f.write(line)
+    
+    return {"success": True, "message": "Server suspended"}
+
+@app.route("/api/unsuspend", methods=["POST"])
+@requires_authorization
+def unsuspend_server():
+    user = discord.fetch_user()
+    
+    # Admin check
+    if not user_is_admin(user.id):
+        return jsonify({"error": "Access denied."}), 403
+    
+    data = request.get_json()["container_name"]
+    if not check_id(data): return {"success": False, "error": "Error! :|"}
+    
+    # Unsuspend the server
+    with open(database_file, 'r') as f:
+        lines = f.readlines()
+    with open(database_file, 'w') as f:
+        for line in lines:
+            if line.split("|")[1] == data:
+                parts = line.strip().split("|")
+                parts[3] = '0'  # Mark as unsuspended
+                f.write("|".join(parts) + "\n")
+            else:
+                f.write(line)
+    
+    return {"success": True, "message": "Server unsuspended"}
 
 
 
@@ -395,7 +486,13 @@ def stop():
 def start():
     try:
         data = request.get_json()["id"]
-        if not check_id(data): return {"success": False, "error": "Error! :|"}
+        user = discord.fetch_user()
+        servers = get_user_servers(user.username)
+        server = next((s for s in servers if s.container_name == data), None)
+        
+        if server is None or server.suspended:
+            return {"success": False, "error": "Server is suspended and cannot be started."}
+        
         tmp = client.containers.get(data)
         tmp.start()
         
@@ -406,6 +503,7 @@ def start():
     except Exception as e:
         print("-"*os.get_terminal_size().columns, e, "-"*os.get_terminal_size().columns)
         return {"success": False, "error": "Error! :|"}
+
 
 def get_ssh_session_line(container):
     def get_ssh_session(logs):
