@@ -103,7 +103,67 @@ async function remove(id) {
 
 // Function to open console for a server
 function openConsole(id) {
-    window.open(`${location.protocol}/xterm?containerid=${id.split("/")[1]}`, "_blank");
+    // Open terminal modal
+    document.getElementById('consoleModal').style.display = 'flex';
+    initializeTerminal(id.split("/")[1]); // Pass container ID
+}
+
+// Function to close the console modal
+function closeConsole() {
+    document.getElementById('consoleModal').style.display = 'none';
+    if (term) {
+        term.dispose();
+    }
+}
+
+// Function to initialize the terminal
+function initializeTerminal(containerId) {
+    const termContainer = document.getElementById('terminal');
+    termContainer.innerHTML = ''; // Clear previous content if any
+
+    const term = new Terminal({
+        cursorBlink: true,
+        macOptionIsMeta: true,
+        scrollback: true,
+    });
+    const fitAddon = new FitAddon.FitAddon();
+    const webLinksAddon = new WebLinksAddon.WebLinksAddon();
+    const searchAddon = new SearchAddon.SearchAddon();
+
+    term.loadAddon(fitAddon);
+    term.loadAddon(webLinksAddon);
+    term.loadAddon(searchAddon);
+    term.open(termContainer);
+    fitAddon.fit();
+
+    term.writeln("Welcome to the terminal");
+    term.writeln('');
+    term.writeln("You can copy with ctrl+shift+c");
+    term.writeln("You can paste with ctrl+shift+v");
+    term.writeln('');
+
+    const socket = io.connect(`/pty?containerid=${containerId}`);
+    term.onData((data) => {
+        socket.emit("pty-input", { input: data });
+    });
+
+    socket.on("pty-output", function (data) {
+        if (data.close_con === true) {
+            socket.disconnect();
+            closeConsole();
+        }
+        term.write(data.output);
+    });
+
+    socket.on("connect", () => {
+        term.writeln("Connected to the server.");
+    });
+
+    socket.on("disconnect", () => {
+        term.writeln("Disconnected from the server.");
+    });
+
+    window.onresize = () => fitAddon.fit();
 }
 
 // Load message popups script after the page loads
