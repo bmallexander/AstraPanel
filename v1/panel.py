@@ -72,6 +72,9 @@ def set_winsize(fd, row, col, xpix=0, ypix=0):
 def upload_to_container(container_id, file_stream, filename):
     client = docker.from_env()
     container = client.containers.get(container_id)
+    
+    # Define container-specific path (assuming /uploads is writable)
+    container_path = f'/uploads/{filename}'
 
     # Create a ZipFile object in memory
     zip_stream = io.BytesIO()
@@ -80,12 +83,11 @@ def upload_to_container(container_id, file_stream, filename):
 
     zip_stream.seek(0)
     
-    # Upload the zip file to the Docker container
     try:
-        container.put_archive('/home', zip_stream.read())
-    except Exception as e:
-        raise Exception(f"Failed to upload file: {e}")
-
+        # Upload the zip file to the Docker container
+        container.put_archive(container_path, zip_stream.read())
+    except docker.errors.APIError as e:
+        raise Exception(f"Error uploading file to container: {e}")
 
 
 @app.route("/xterm")
@@ -509,15 +511,24 @@ def file_explorer():
 @app.route("/upload", methods=['POST'])
 @requires_authorization
 def upload():
+    if 'file' not in request.files:
+        return jsonify({"message": "No file part"}), 400
+
     file = request.files['file']
-    container_id = request.form['containerid']
-    filename = secure_filename(file.filename)
-    if not filename:
-        return jsonify({"message": "No file selected"}), 400
+    container_id = request.form.get('containerid')
+
+    if not container_id:
+        return jsonify({"message": "Container ID was not provided"}), 400
+
+    if file.filename == '':
+        return jsonify({"message": "No selected file"}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({"message": "Invalid file type"}), 400
 
     try:
         file_stream = io.BytesIO(file.read())
-        upload_to_container(container_id, file_stream, filename)
+        upload_to_container(container_id, file_stream, file.filename)
         return jsonify({"message": "File uploaded successfully"}), 200
     except Exception as e:
         return jsonify({"message": str(e)}), 500
