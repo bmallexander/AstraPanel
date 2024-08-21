@@ -540,4 +540,9 @@ def unzip_file(filename):
 
 
 if __name__ == "__main__":
-    app.run(ssl_context=(os.environ["SSL_CERTIFICATE_FILE"], os.environ["SSL_KEY_FILE"]), debug=True, port=5001)
+    app.run(
+        host="0.0.0.0", 
+        port=5001, 
+        ssl_context=(os.environ["SSL_CERTIFICATE_FILE"], os.environ["SSL_KEY_FILE"]), 
+        debug=True
+    )
