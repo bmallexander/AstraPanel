@@ -161,19 +161,21 @@ def update_server_status(user, container_name, status):
     if not os.path.exists(database_file):
         return
     
+    lines = []
     with open(database_file, 'r') as f:
-        lines = f.readlines()
-    
-    with open(database_file, 'w') as f:
-        for line in lines:
+        for line in f:
             if line.startswith(f"{user}|{container_name}|"):
                 parts = line.strip().split('|')
                 if len(parts) == 3:
-                    f.write(f"{user}|{container_name}|{status}\n")
+                    lines.append(f"{user}|{container_name}|{status}\n")
                 else:
-                    f.write(line)
+                    lines.append(line)
             else:
-                f.write(line)
+                lines.append(line)
+    
+    with open(database_file, 'w') as f:
+        f.writelines(lines)
+
 
 
 @app.route("/xterm")
@@ -584,21 +586,29 @@ def admin_panel():
 
     return render_template("admin_panel.html", servers=all_servers)
 
-@app.route("/admin/suspend", methods=["POST"])
+@app.route("/api/suspend", methods=["POST"])
 @requires_authorization
-def suspend_server():
-    user = discord.fetch_user()
-    if user.id not in ADMIN_USER_IDS:
-        return jsonify({"success": False, "error": "Unauthorized"}), 403
-
-    data = request.json
-    container_id = data.get("id")
-
+def suspend():
     try:
-        suspend_container(container_id)
-        return jsonify({"success": True, "message": "Server suspended successfully"})
+        data = request.get_json()  # Parse JSON data
+        container_id = data.get("id")
+        
+        # Validate the container ID and check if it's valid
+        if not check_id(container_id):
+            return jsonify({"success": False, "error": "Invalid server ID"}), 400
+        
+        # Suspend the container
+        container = client.containers.get(container_id)
+        container.stop()
+        
+        # Update the server status to "suspended"
+        user = discord.fetch_user()
+        update_server_status(user.username, container.name, "suspended")
+        
+        return jsonify({"success": True})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        print("-" * 40, e, "-" * 40)
+        return jsonify({"success": False, "error": "Error suspending server"}), 500
 
 
 

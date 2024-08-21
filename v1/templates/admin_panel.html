@@ -25,14 +25,13 @@
                 <td>{{ server.resources[0] }}</td>
                 <td>{{ server.resources[1] }}</td>
                 <td>
-                    <form action="{{ url_for('suspend_server') }}" method="POST" style="display:inline;">
-                        <input type="hidden" name="id" value="{{ server.id }}">
-                        <button type="submit">Suspend</button>
-                    </form>
+                    <!-- Add a data-container-id attribute to the button -->
+                    <button class="suspend-btn" data-container-id="{{ server.id }}">Suspend</button>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    <script src="suspend.js" defer></script>
 </body>
 </html>
