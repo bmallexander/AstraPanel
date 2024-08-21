@@ -37,6 +37,7 @@ SITE_TITLE                          = os.environ["SITE_TITLE"]
 database_file                       = os.environ["database_file"]
 VM_IMAGES                           = os.environ["VM_IMAGES"].split(",")
 
+UPLOAD_FOLDER = 'uploads'
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
