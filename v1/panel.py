@@ -151,25 +151,39 @@ def suspend_container(container_id):
         user = discord.fetch_user()
         update_server_status(user.username, container.name, "suspended")
         
+        # Load existing suspended status
+        if os.path.exists(SUSPENDED_STATUS_FILE):
+            with open(SUSPENDED_STATUS_FILE, 'r') as f:
+                suspended_status = json.load(f)
+        else:
+            suspended_status = {}
+        
+        # Update the status
+        suspended_status[container_id] = {
+            'name': container.name,
+            'status': 'suspended',
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # Save the updated status to the JSON file
+        with open(SUSPENDED_STATUS_FILE, 'w') as f:
+            json.dump(suspended_status, f, indent=4)
+        
         print(f"Container {container_id} suspended due to exceeding resource limits.")
     except Exception as e:
         print(f"Error suspending container {container_id}: {e}")
 
 
 
-def update_server_status(user, container_name, status):
+def update_server_status(username, container_name, status):
     if not os.path.exists(database_file):
         return
     
     lines = []
     with open(database_file, 'r') as f:
         for line in f:
-            if line.startswith(f"{user}|{container_name}|"):
-                parts = line.strip().split('|')
-                if len(parts) == 3:
-                    lines.append(f"{user}|{container_name}|{status}\n")
-                else:
-                    lines.append(line)
+            if line.startswith(f"{username}|{container_name}|"):
+                lines.append(f"{username}|{container_name}|{status}\n")
             else:
                 lines.append(line)
     
@@ -488,19 +502,28 @@ def stop():
 def start():
     try:
         data = request.get_json()["id"]
-        if not check_id(data): return {"success": False, "error": "Error! :|"}
-        
+        if not check_id(data):
+            return {"success": False, "error": "Error! :|"}
+
         user = discord.fetch_user()
         user_plan = get_user_plan(user.username)  # Get user's plan
-        
+
+        # Check if the server is suspended
+        with open(database_file, 'r') as f:
+            for line in f:
+                if line.startswith(f"{user.username}|{data}|"):
+                    status = line.strip().split('|')[2]
+                    if status == "suspended":
+                        return {"success": False, "error": "Server is suspended and cannot be started"}
+
         if is_usage_exceeded(data, user_plan):
             return {"success": False, "error": "Server suspended due to exceeding resource limits"}
-        
+
         tmp = client.containers.get(data)
         tmp.start()
         return {"success": True}
     except Exception as e:
-        print("-"*os.get_terminal_size().columns, e, "-"*os.get_terminal_size().columns)
+        print("-" * os.get_terminal_size().columns, e, "-" * os.get_terminal_size().columns)
         return {"success": False, "error": "Error! :|"}
 
 
@@ -586,6 +609,12 @@ def admin_panel():
 
     return render_template("admin_panel.html", servers=all_servers)
 
+
+
+SUSPENDED_STATUS_FILE = 'suspended_status.json'
+
+
+
 def check_name(name):
     # Implement your validation logic here
     if not name or len(name) < 3:
@@ -597,6 +626,7 @@ def update_server_status(username, container_name, status):
     # Placeholder for actual implementation
     # This could be a database update or another service call
     print(f"Updating status for {container_name} to {status} by {username}")
+
 
 @app.route("/api/suspend", methods=["POST"])
 def suspend():
@@ -622,7 +652,6 @@ def suspend():
         container.stop()
 
         # Update the server status to "suspended"
-        # Assuming `update_server_status` is a function that updates the server status
         user = "admin"  # Replace with actual user fetching logic
         update_server_status(user, container.name, "suspended")
 
