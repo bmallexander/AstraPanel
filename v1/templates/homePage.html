@@ -6,7 +6,106 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home - {{ site_title }}</title>
     <link rel="stylesheet" href="https://unpkg.com/@tabler/core@latest/dist/css/tabler.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background-color: #007bff;
+            color: #fff;
+            border-bottom: 1px solid #0056b3;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0 4px;
+        }
+
+        .btn-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .btn-warning {
+            background-color: #ffc107;
+            border-color: #ffc107;
+        }
+
+        .btn-info {
+            background-color: #17a2b8;
+            border-color: #17a2b8;
+        }
+
+        .btn-outline-danger {
+            color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .btn-outline-danger:hover {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .table thead th {
+            background-color: #007bff;
+            color: #fff;
+            text-align: center;
+        }
+
+        .table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .text-muted {
+            color: #6c757d !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .card-title {
+            margin-bottom: 0;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .card-body p {
+            font-size: 1.25rem;
+        }
+    </style>
 </head>
 
 <body>
@@ -30,21 +129,21 @@
                             </thead>
                             <tbody>
                                 {% for server in servers %}
-                                <tr class="{% if (server.id + 1) % 2 == 0 %}bg-light{% endif %}">
+                                <tr>
                                     <td>{{ server.id + 1 }}.</td>
                                     <td class="user-select-all">{{ server.container_name }}</td>
                                     <td class="user-select-all">{{ server.ssh_session_line }}</td>
                                     <td class="text-center">
                                         {% if server.status == 1 %}
                                         <button class="btn btn-danger btn-icon" title="Stop" onclick="stop('{{ user.username }}/{{ server.container_name }}')">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                                                 <path fill="none" d="M0 0h24v24H0z" />
                                                 <path d="M6 6h12v12H6z" />
                                             </svg>
                                         </button>
                                         {% else %}
                                         <button class="btn btn-success btn-icon" title="Start" onclick="start('{{ user.username }}/{{ server.container_name }}')">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                                                 <path fill="none" d="M0 0h24v24H0z" />
                                                 <path d="M8 5v14l11-7z" />
                                             </svg>
@@ -52,9 +151,9 @@
                                         {% endif %}
                                         <button class="btn btn-warning btn-icon" title="Restart" onclick="restart('{{ user.username }}/{{ server.container_name }}')">
                                             ↻
-                                        </button>   
+                                        </button>
                                         <button class="btn btn-info btn-icon" title="Console" onclick="open_console('{{ user.username }}/{{ server.container_name }}')">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="24" height="24">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
                                                 <rect height="10.5" width="12.5" y="2.75" x="1.75"></rect>
                                                 <path d="m8.75 10.25h2.5m-6.5-4.5 2.5 2.25-2.5 2.25"></path>
                                             </svg>
@@ -79,7 +178,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-lg-4">
                 <div class="card">
                     <div class="card-body text-center">
