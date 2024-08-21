@@ -1,50 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Manager - {{ site_title }}</title>
-    <link rel="stylesheet" href="https://unpkg.com/@tabler/core@latest/dist/css/tabler.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
+    <title>{{ site_title }} - File Manager</title>
 </head>
-
 <body>
-    {% include 'header.html' %}
-    <div class="container">
-        <h3>File Manager</h3>
-        <div class="row">
-            <div class="col-md-6">
-                <h4>Local Files</h4>
-                <ul>
-                    {% for file in uploaded_files %}
-                    <li><a href="{{ url_for('download', filename=file) }}">{{ file }}</a></li>
-                    {% endfor %}
-                </ul>
-            </div>
-            <div class="col-md-6">
-                <h4>Container Files</h4>
-                <ul>
-                    {% for container, files in container_files.items() %}
-                    <h5>{{ container }}</h5>
-                    <ul>
-                        {% for file in files %}
-                        <li>{{ file }}</li>
-                        {% endfor %}
-                    </ul>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-        <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data">
-            <input type="file" name="file" required>
-            <input type="hidden" name="containerid" value="{{ container_id }}">
-            <button type="submit">Upload File</button>
-        </form>
-        <form action="{{ url_for('unzip_file', filename='your_zip_file.zip') }}" method="POST">
-            <button type="submit">Unzip File</button>
-        </form>
-    </div>
-</body>
+    <h1>File Manager</h1>
 
+    <h2>Uploaded Files</h2>
+    <ul>
+        {% for file in uploaded_files %}
+        <li><a href="{{ url_for('download', filename=file) }}">{{ file }}</a></li>
+        {% endfor %}
+    </ul>
+
+    <h2>Container Files</h2>
+    <ul>
+        {% if container_files[container_id] %}
+        {% for file in container_files[container_id] %}
+        <li>{{ file }}</li>
+        {% endfor %}
+        {% else %}
+        <li>No files found or error fetching files.</li>
+        {% endif %}
+    </ul>
+
+    <h2>Upload File</h2>
+    <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="containerid" value="{{ container_id }}">
+        <input type="file" name="file" accept=".zip">
+        <input type="submit" value="Upload">
+    </form>
+</body>
 </html>

@@ -72,7 +72,7 @@ def set_winsize(fd, row, col, xpix=0, ypix=0):
 def upload_to_container(container_id, file_stream, filename):
     client = docker.from_env()
     container = client.containers.get(container_id)
-    
+
     # Create a ZipFile object in memory
     zip_stream = io.BytesIO()
     with zipfile.ZipFile(zip_stream, 'w') as zip_file:
@@ -81,7 +81,11 @@ def upload_to_container(container_id, file_stream, filename):
     zip_stream.seek(0)
     
     # Upload the zip file to the Docker container
-    container.put_archive('/', zip_stream.read())
+    try:
+        container.put_archive('/', zip_stream.read())
+    except Exception as e:
+        raise Exception(f"Failed to upload file: {e}")
+
 
 
 @app.route("/xterm")
@@ -468,25 +472,28 @@ def file_explorer():
     user = discord.fetch_user()
     servers = get_user_servers(user.username)
 
-    # Check if the container exists and is owned by the user
+    # Check if the container exists and is accessible
     if container_name not in [server.container_name for server in servers]:
         return jsonify({"error": True, "message": "Container not found"}), 404
 
-    local_files = os.listdir(app.config['UPLOAD_FOLDER'])
+    container = client.containers.get(container_name)
+
+    # List files in the container
     container_files = {}
-    
     try:
-        container = client.containers.get(container_name)
+        # Fetch files from the container
         bits, stat = container.get_archive('/')
-        file_list = [member['path'] for member in stat]
-        container_files[container_name] = file_list
-    except docker.errors.NotFound:
-        return jsonify({"error": True, "message": "Container not found"}), 404
+        container_files[container_name] = [member['path'] for member in stat]
     except Exception as e:
         container_files[container_name] = [f"Error fetching files: {e}"]
 
-    return render_template("file_manager.html", uploaded_files=local_files, container_files=container_files, site_title=SITE_TITLE)
+    # List files in the upload folder on the host system
+    local_files = os.listdir(app.config['UPLOAD_FOLDER'])
 
+    return render_template("file_manager.html", 
+                           uploaded_files=local_files, 
+                           container_files=container_files, 
+                           site_title=SITE_TITLE)
 
 
 
@@ -496,7 +503,6 @@ def upload():
     file = request.files['file']
     container_id = request.form['containerid']
     filename = secure_filename(file.filename)
-    
     if not filename:
         return jsonify({"message": "No file selected"}), 400
 
