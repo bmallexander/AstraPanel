@@ -2,14 +2,14 @@
 <html>
 <head>
     <title>Admin Panel - {{ site_title }}</title>
+    <script src=static/jssuspend.js"></script> <!-- Make sure to include this script -->
 </head>
 <body>
     <h1>Admin Panel</h1>
     <table>
         <thead>
             <tr>
-                <th>Container ID</th>
-                <th>Name</th>
+                <th>Container Name</th>
                 <th>Status</th>
                 <th>CPU Usage</th>
                 <th>Memory Usage</th>
@@ -19,19 +19,16 @@
         <tbody>
             {% for server in servers %}
             <tr>
-                <td>{{ server.id }}</td>
                 <td>{{ server.name }}</td>
                 <td>{{ server.status }}</td>
                 <td>{{ server.resources[0] }}</td>
                 <td>{{ server.resources[1] }}</td>
                 <td>
-                    <!-- Add a data-container-id attribute to the button -->
-                    <button class="suspend-btn" data-container-id="{{ server.id }}">Suspend</button>
+                    <button onclick="suspendServer('{{ server.name }}')">Suspend</button>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    <script src="/static/js/suspend.js" defer></script>
 </body>
 </html>

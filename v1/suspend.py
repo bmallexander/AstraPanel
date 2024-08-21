@@ -1,35 +1,45 @@
 import requests
 import json
+import warnings
 
-def suspend_server(server_id, api_url):
+# Suppress only the InsecureRequestWarning
+warnings.filterwarnings("ignore", message="Unverified HTTPS request")
+
+def suspend_server_by_name(server_name, api_url):
     # Define the payload and headers
-    payload = {'id': server_id}
+    payload = {'name': server_name}
     headers = {'Content-Type': 'application/json'}
 
     try:
-        # Make the POST request
-        response = requests.post(api_url, data=json.dumps(payload), headers=headers)
+        # Make the POST request, bypassing SSL verification
+        response = requests.post(api_url, data=json.dumps(payload), headers=headers, verify=False)
         
         # Check the response status
         if response.status_code == 200:
-            data = response.json()
-            if data.get('success'):
-                print('Server suspended successfully')
-            else:
-                print(f"Error suspending server: {data.get('error')}")
+            try:
+                data = response.json()
+                if data.get('success'):
+                    print('Server suspended successfully')
+                else:
+                    print(f"Error suspending server: {data.get('error')}")
+            except json.JSONDecodeError:
+                print("Failed to decode JSON response. Response content:")
+                print(response.text)
         else:
-            print(f"Request failed with status code {response.status_code}")
+            print(f"Request failed with status code {response.status_code}. Response content:")
+            print(response.text)
 
     except requests.RequestException as e:
         print(f"An error occurred: {e}")
 
-def main():
-    # Input the server ID and API URL
-    server_id = input("Enter the Server ID to suspend: ")
-    api_url = 'http://194.120.116.224:5001/api/suspend' 
 
-    # Call the suspend_server function
-    suspend_server(server_id, api_url)
+def main():
+    # Input the server name and API URL
+    server_name = input("Enter the Server Name to suspend: ")
+    api_url = 'https://194.120.116.224:5001/api/suspend' 
+
+    # Call the suspend_server_by_name function
+    suspend_server_by_name(server_name, api_url)
 
 if __name__ == '__main__':
     main()

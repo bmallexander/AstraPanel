@@ -591,20 +591,30 @@ def admin_panel():
 def suspend():
     try:
         data = request.get_json()  # Parse JSON data
-        container_id = data.get("id")
+        server_name = data.get("name")  # Get the server name from the request
+
+        # Validate the server name and check if it's valid
+        if not server_name or not check_name(server_name):
+            return jsonify({"success": False, "error": "Invalid server name"}), 400
+
+        # Find the container by name
+        container = None
+        for c in client.containers.list(all=True):
+            if c.name == server_name:
+                container = c
+                break
         
-        # Validate the container ID and check if it's valid
-        if not check_id(container_id):
-            return jsonify({"success": False, "error": "Invalid server ID"}), 400
-        
-        # Suspend the container
-        container = client.containers.get(container_id)
+        if container is None:
+            return jsonify({"success": False, "error": "Container not found"}), 404
+
+        # Suspend (stop) the container
         container.stop()
-        
+
         # Update the server status to "suspended"
-        user = discord.fetch_user()
+        # Assuming `update_server_status` is a function that updates the server status
+        user = discord.fetch_user()  # Fetch user details from Discord
         update_server_status(user.username, container.name, "suspended")
-        
+
         return jsonify({"success": True})
     except Exception as e:
         print("-" * 40, e, "-" * 40)
