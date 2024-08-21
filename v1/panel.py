@@ -472,16 +472,24 @@ def file_explorer():
     user = discord.fetch_user()
     servers = get_user_servers(user.username)
 
+    # Debug: Print available servers
+    print(f"Available servers: {[server.container_name for server in servers]}")
+
     # Check if the container exists and is accessible
     if container_name not in [server.container_name for server in servers]:
         return jsonify({"error": True, "message": "Container not found"}), 404
 
-    container = client.containers.get(container_name)
+    # Try to access the container
+    try:
+        container = client.containers.get(container_name)
+    except docker.errors.NotFound:
+        return jsonify({"error": True, "message": "Container not found on the host system"}), 404
+    except Exception as e:
+        return jsonify({"error": True, "message": f"Error accessing container: {e}"}), 500
 
     # List files in the container
     container_files = {}
     try:
-        # Fetch files from the container
         bits, stat = container.get_archive('/')
         container_files[container_name] = [member['path'] for member in stat]
     except Exception as e:
@@ -494,6 +502,7 @@ def file_explorer():
                            uploaded_files=local_files, 
                            container_files=container_files, 
                            site_title=SITE_TITLE)
+
 
 
 
