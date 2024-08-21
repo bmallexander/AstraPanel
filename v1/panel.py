@@ -37,6 +37,10 @@ SITE_TITLE                          = os.environ["SITE_TITLE"]
 database_file                       = os.environ["database_file"]
 VM_IMAGES                           = os.environ["VM_IMAGES"].split(",")
 
+
+SUSPENDED_STATUS_FILE = 'suspended.json'
+
+
 UPLOAD_FOLDER = 'uploads'
 
 ADMIN_USER_IDS = [1255309054167875637]
@@ -505,40 +509,47 @@ def stop():
         print("-"*os.get_terminal_size().columns, e, "-"*os.get_terminal_size().columns)
         return {"success": False, "error": "Error! :|"}
     
-@app.route("/api/start", methods=["POST"])
+@app.route("/start", methods=["POST"])
 @requires_authorization
 def start():
     try:
-        data = request.get_json()["id"]
-        if not check_id(data):
-            return {"success": False, "error": "Error! :|"}
+        data = request.get_json()
+        server_name = data.get("name")
+
+        if not check_name(server_name):
+            return jsonify({"success": False, "error": "Invalid server name"}), 400
+
+        container = None
+        for c in client.containers.list(all=True):
+            if c.name == server_name:
+                container = c
+                break
+
+        if container is None:
+            return jsonify({"success": False, "error": "Container not found"}), 404
+
+        # Check if the container is suspended
+        if is_suspended(container.id):
+            return jsonify({"success": False, "error": "Container is suspended"}), 403
+
+        container.start()
         
         user = discord.fetch_user()
-        user_plan = get_user_plan(user.username)  # Get user's plan
-        
-        # Check if the server is suspended
-        is_suspended = False
-        if os.path.exists(SUSPENDED_STATUS_FILE):
-            with open(SUSPENDED_STATUS_FILE, 'r') as f:
-                suspended_status = json.load(f)
-                if data in suspended_status and suspended_status[data]['status'] == 'suspended':
-                    is_suspended = True
-        
-        if is_suspended:
-            return {"success": False, "error": "Server is suspended and cannot be started"}
-        
-        if is_usage_exceeded(data, user_plan):
-            # Suspend the server if usage is exceeded
-            suspend_container(data)
-            return {"success": False, "error": "Server suspended due to exceeding resource limits"}
-        
-        container = client.containers.get(data)
-        container.start()
-        return {"success": True}
-    
+        update_server_status(user.username, container.name, "started")
+
+        return jsonify({"success": True})
     except Exception as e:
-        print("-" * os.get_terminal_size().columns, e, "-" * os.get_terminal_size().columns)
-        return {"success": False, "error": "Error! :|"}
+        print("-" * 40, e, "-" * 40)
+        return jsonify({"success": False, "error": "Error starting server"}), 500
+
+def is_suspended(container_id):
+    if not os.path.exists(SUSPENDED_STATUS_FILE):
+        return False
+
+    with open(SUSPENDED_STATUS_FILE, 'r') as f:
+        suspended_status = json.load(f)
+
+    return container_id in suspended_status and suspended_status[container_id]['status'] == 'suspended'
 
 
 
@@ -627,7 +638,6 @@ def admin_panel():
 
 
 
-SUSPENDED_STATUS_FILE = 'suspended.json'
 
 def update_suspended_status(container_name, status):
     # Load existing suspended status
