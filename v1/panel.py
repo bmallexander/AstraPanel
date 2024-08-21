@@ -508,17 +508,13 @@ def file_explorer():
 
 
 
-@app.route("/upload", methods=['POST'])
+@app.route("/upload/<container_id>", methods=['POST'])
 @requires_authorization
-def upload():
+def upload(container_id):
     if 'file' not in request.files:
         return jsonify({"message": "No file part"}), 400
 
     file = request.files['file']
-    container_id = request.form.get('containerid')
-
-    if not container_id:
-        return jsonify({"message": "Container ID was not provided"}), 400
 
     if file.filename == '':
         return jsonify({"message": "No selected file"}), 400
