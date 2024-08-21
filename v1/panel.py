@@ -69,25 +69,25 @@ def set_winsize(fd, row, col, xpix=0, ypix=0):
     winsize = struct.pack("HHHH", row, col, xpix, ypix)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
 
-def upload_to_container(container_id, file_stream, filename):
-    client = docker.from_env()
-    container = client.containers.get(container_id)
+# def upload_to_container(container_id, file_stream, filename):
+#     client = docker.from_env()
+#     container = client.containers.get(container_id)
     
-    # Define container-specific path (assuming /uploads is writable)
-    container_path = f'/uploads/{filename}'
+#     # Define container-specific path (assuming /uploads is writable)
+#     container_path = f'/uploads/{filename}'
 
-    # Create a ZipFile object in memory
-    zip_stream = io.BytesIO()
-    with zipfile.ZipFile(zip_stream, 'w') as zip_file:
-        zip_file.writestr(filename, file_stream.read())
+#     # Create a ZipFile object in memory
+#     zip_stream = io.BytesIO()
+#     with zipfile.ZipFile(zip_stream, 'w') as zip_file:
+#         zip_file.writestr(filename, file_stream.read())
 
-    zip_stream.seek(0)
+#     zip_stream.seek(0)
     
-    try:
-        # Upload the zip file to the Docker container
-        container.put_archive(container_path, zip_stream.read())
-    except docker.errors.APIError as e:
-        raise Exception(f"Error uploading file to container: {e}")
+#     try:
+#         # Upload the zip file to the Docker container
+#         container.put_archive(container_path, zip_stream.read())
+#     except docker.errors.APIError as e:
+#         raise Exception(f"Error uploading file to container: {e}")
 
 
 @app.route("/xterm")
@@ -464,89 +464,89 @@ def create_server_task():
         return {"error": True, "message":"Something went wrong or the server is taking longer than expected. if this problem continues, Contact Support." + "\n\nTechnical Logs: " + container_logs, "message_color":MsgColors.error}
 
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'zip'
+# def allowed_file(filename):
+#     return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'zip'
 
-@app.route("/file_explorer/<container_id>")
-@requires_authorization
-def file_explorer(container_id):
-    # Try to access the container
-    try:
-        container = client.containers.get(container_id)
-    except docker.errors.NotFound:
-        return jsonify({"error": True, "message": "Container not found on the host system"}), 404
-    except Exception as e:
-        return jsonify({"error": True, "message": f"Error accessing container: {e}"}), 500
+# @app.route("/file_explorer/<container_id>")
+# @requires_authorization
+# def file_explorer(container_id):
+#     # Try to access the container
+#     try:
+#         container = client.containers.get(container_id)
+#     except docker.errors.NotFound:
+#         return jsonify({"error": True, "message": "Container not found on the host system"}), 404
+#     except Exception as e:
+#         return jsonify({"error": True, "message": f"Error accessing container: {e}"}), 500
 
-    # List files in the container
-    container_files = {}
-    try:
-        bits, stat = container.get_archive('/')
-        container_files[container_id] = [member['path'] for member in stat]
-    except Exception as e:
-        container_files[container_id] = [f"Error fetching files: {e}"]
+#     # List files in the container
+#     container_files = {}
+#     try:
+#         bits, stat = container.get_archive('/')
+#         container_files[container_id] = [member['path'] for member in stat]
+#     except Exception as e:
+#         container_files[container_id] = [f"Error fetching files: {e}"]
 
-    # List files in the upload folder on the host system
-    local_files = os.listdir(app.config['UPLOAD_FOLDER'])
+#     # List files in the upload folder on the host system
+#     local_files = os.listdir(app.config['UPLOAD_FOLDER'])
 
-    return render_template("file_manager.html", 
-                           uploaded_files=local_files, 
-                           container_files=container_files, 
-                           site_title=SITE_TITLE)
-
-
-
-
-
-@app.route("/upload/<container_id>", methods=['POST'])
-@requires_authorization
-def upload(container_id):
-    if 'file' not in request.files:
-        return jsonify({"message": "No file part"}), 400
-
-    file = request.files['file']
-
-    if file.filename == '':
-        return jsonify({"message": "No selected file"}), 400
-
-    if not allowed_file(file.filename):
-        return jsonify({"message": "Invalid file type"}), 400
-
-    try:
-        file_stream = io.BytesIO(file.read())
-        upload_to_container(container_id, file_stream, file.filename)
-        return jsonify({"message": "File uploaded successfully"}), 200
-    except Exception as e:
-        return jsonify({"message": str(e)}), 500
+#     return render_template("file_manager.html", 
+#                            uploaded_files=local_files, 
+#                            container_files=container_files, 
+#                            site_title=SITE_TITLE)
 
 
 
 
-@app.route("/download/<path:filename>")
-@requires_authorization
-def download(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+# @app.route("/upload/<container_id>", methods=['POST'])
+# @requires_authorization
+# def upload(container_id):
+#     if 'file' not in request.files:
+#         return jsonify({"message": "No file part"}), 400
+
+#     file = request.files['file']
+
+#     if file.filename == '':
+#         return jsonify({"message": "No selected file"}), 400
+
+#     if not allowed_file(file.filename):
+#         return jsonify({"message": "Invalid file type"}), 400
+
+#     try:
+#         file_stream = io.BytesIO(file.read())
+#         upload_to_container(container_id, file_stream, file.filename)
+#         return jsonify({"message": "File uploaded successfully"}), 200
+#     except Exception as e:
+#         return jsonify({"message": str(e)}), 500
 
 
-@app.route("/unzip/<filename>", methods=["POST"])
-@requires_authorization
-def unzip_file(filename):
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+
+# @app.route("/download/<path:filename>")
+# @requires_authorization
+# def download(filename):
+#     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+# @app.route("/unzip/<filename>", methods=["POST"])
+# @requires_authorization
+# def unzip_file(filename):
+#     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     
-    if not os.path.exists(file_path):
-        return jsonify({"success": False, "message": "File does not exist"})
+#     if not os.path.exists(file_path):
+#         return jsonify({"success": False, "message": "File does not exist"})
     
-    if filename.rsplit('.', 1)[1].lower() != 'zip':
-        return jsonify({"success": False, "message": "Not a zip file"})
+#     if filename.rsplit('.', 1)[1].lower() != 'zip':
+#         return jsonify({"success": False, "message": "Not a zip file"})
 
-    try:
-        with zipfile.ZipFile(file_path, 'r') as zip_ref:
-            extract_path = os.path.join(app.config['UPLOAD_FOLDER'], filename.rsplit('.', 1)[0])
-            os.makedirs(extract_path, exist_ok=True)
-            zip_ref.extractall(extract_path)
-        return jsonify({"success": True, "message": "File unzipped successfully"})
-    except Exception as e:
-        return jsonify({"success": False, "message": f"Error unzipping file: {e}"})
+#     try:
+#         with zipfile.ZipFile(file_path, 'r') as zip_ref:
+#             extract_path = os.path.join(app.config['UPLOAD_FOLDER'], filename.rsplit('.', 1)[0])
+#             os.makedirs(extract_path, exist_ok=True)
+#             zip_ref.extractall(extract_path)
+#         return jsonify({"success": True, "message": "File unzipped successfully"})
+#     except Exception as e:
+#         return jsonify({"success": False, "message": f"Error unzipping file: {e}"})
 
 
 
