@@ -6,12 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home - {{ site_title }}</title>
     <link rel="stylesheet" href="https://unpkg.com/@tabler/core@latest/dist/css/tabler.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #f4f7f9;
-            color: #333;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 0;
         }
 
         .container {
@@ -19,56 +21,61 @@
         }
 
         .card {
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
 
         .card-header {
-            background-color: #007bff;
+            background-color: #333;
             color: #fff;
-            border-bottom: 1px solid #0056b3;
-            border-radius: 10px 10px 0 0;
+            border-bottom: 1px solid #444;
+            border-radius: 8px 8px 0 0;
+            padding: 16px;
+        }
+
+        .table thead th {
+            background-color: #333;
+            color: #fff;
+        }
+
+        .table tbody tr:nth-child(even) {
+            background-color: #252525;
         }
 
         .btn-icon {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 0;
             margin: 0 4px;
-        }
-
-        .btn-icon svg {
-            width: 18px;
-            height: 18px;
+            border: none;
+            background-color: transparent;
         }
 
         .btn-success {
-            background-color: #28a745;
-            border-color: #28a745;
+            color: #28a745;
         }
 
         .btn-danger {
-            background-color: #dc3545;
-            border-color: #dc3545;
+            color: #dc3545;
         }
 
         .btn-warning {
-            background-color: #ffc107;
-            border-color: #ffc107;
+            color: #ffc107;
         }
 
         .btn-info {
-            background-color: #17a2b8;
-            border-color: #17a2b8;
+            color: #17a2b8;
         }
 
         .btn-outline-danger {
             color: #dc3545;
-            border-color: #dc3545;
+            border: 1px solid #dc3545;
         }
 
         .btn-outline-danger:hover {
@@ -76,34 +83,64 @@
             color: #fff;
         }
 
-        .table thead th {
-            background-color: #007bff;
+        .btn-success:hover {
+            background-color: #28a745;
             color: #fff;
-            text-align: center;
         }
 
-        .table tbody tr:nth-child(even) {
-            background-color: #f8f9fa;
+        .btn-danger:hover {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .btn-warning:hover {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .btn-info:hover {
+            background-color: #17a2b8;
+            color: #fff;
+        }
+
+        .btn-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
         }
 
         .text-muted {
-            color: #6c757d !important;
+            color: #999 !important;
         }
 
         .text-center {
             text-align: center;
         }
 
+        .card-body p {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
         .card-title {
             margin-bottom: 0;
+            color: #fff;
         }
 
-        .card-body {
-            padding: 20px;
-        }
+        @media (max-width: 768px) {
+            .card-body p {
+                font-size: 1rem;
+            }
 
-        .card-body p {
-            font-size: 1.25rem;
+            .btn-icon {
+                width: 32px;
+                height: 32px;
+            }
+
+            .btn-icon svg {
+                width: 16px;
+                height: 16px;
+            }
         }
     </style>
 </head>
@@ -161,10 +198,6 @@
                                         <button class="btn btn-outline-danger btn-icon" title="Delete" onclick="remove('{{ user.username }}/{{ server.container_name }}')">
                                             ✖
                                         </button>
-                                        <!-- New Button for File Explorer -->
-                                        <!-- <button class="btn btn-secondary btn-icon" title="File Explorer" onclick="open_file_explorer('{{ user.username }}/{{ server.container_name }}')">
-                                            📁
-                                        </button> -->
                                     </td>
                                 </tr>
                                 {% endfor %}
