@@ -177,18 +177,26 @@ def suspend_container(container_id):
 
 def update_server_status(username, container_name, status):
     if not os.path.exists(database_file):
+        print("Database file does not exist.")
         return
     
-    lines = []
     with open(database_file, 'r') as f:
-        for line in f:
-            if line.startswith(f"{username}|{container_name}|"):
-                lines.append(f"{username}|{container_name}|{status}\n")
-            else:
-                lines.append(line)
+        lines = f.readlines()
     
+    updated = False
     with open(database_file, 'w') as f:
-        f.writelines(lines)
+        for line in lines:
+            if line.startswith(f"{username}|{container_name}|"):
+                f.write(f"{username}|{container_name}|{status}\n")
+                updated = True
+            else:
+                f.write(line)
+        
+        if not updated:
+            f.write(f"{username}|{container_name}|{status}\n")
+    
+    print("Updated status to:", status)
+
 
 
 
@@ -509,22 +517,28 @@ def start():
         user_plan = get_user_plan(user.username)  # Get user's plan
 
         # Check if the server is suspended
+        is_suspended = False
         with open(database_file, 'r') as f:
             for line in f:
                 if line.startswith(f"{user.username}|{data}|"):
                     status = line.strip().split('|')[2]
                     if status == "suspended":
-                        return {"success": False, "error": "Server is suspended and cannot be started"}
+                        is_suspended = True
+                        break
+
+        if is_suspended:
+            return {"success": False, "error": "Server is suspended and cannot be started"}
 
         if is_usage_exceeded(data, user_plan):
             return {"success": False, "error": "Server suspended due to exceeding resource limits"}
 
-        tmp = client.containers.get(data)
-        tmp.start()
+        container = client.containers.get(data)
+        container.start()
         return {"success": True}
     except Exception as e:
         print("-" * os.get_terminal_size().columns, e, "-" * os.get_terminal_size().columns)
         return {"success": False, "error": "Error! :|"}
+
 
 
 def get_ssh_session_line(container):
