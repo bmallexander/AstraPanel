@@ -5,13 +5,18 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Earn Coins</title>
+    <link rel="stylesheet" href="https://unpkg.com/@tabler/core@latest/dist/css/tabler.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='static/css/earnCoins.css') }}">
 </head>
 <body>
-    <div class="earn-coins-container">
-        <h1>Congratulations!</h1>
-        <p>You have earned coins successfully.</p>
-        <p>Next earning available in <span id="time-left"></span> seconds.</p>
+    <div class="page page-center">
+        <div class="container-tight py-4">
+            <div class="text-center">
+                <h1 class="display-4">Congratulations!</h1>
+                <p class="text-muted">You have earned coins successfully.</p>
+                <p class="text-muted">Next earning available in <span id="time-left" class="text-primary"></span> seconds.</p>
+            </div>
+        </div>
     </div>
 
     <script>

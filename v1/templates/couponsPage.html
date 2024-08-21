@@ -4,17 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redeem Coupon</title>
+    <link rel="stylesheet" href="https://unpkg.com/@tabler/core@latest/dist/css/tabler.min.css">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
-    <h1>Redeem Coupon</h1>
-    <form id="couponForm">
-        <label for="couponCode">Enter Coupon Code:</label>
-        <input type="text" id="couponCode" name="couponCode" required>
-        <button type="submit">Redeem</button>
-    </form>
-
-    <div id="message"></div>
+    <div class="page page-center">
+        <div class="container-tight py-4">
+            <div class="text-center mb-4">
+                <h1 class="display-4">Redeem Coupon</h1>
+            </div>
+            <form id="couponForm" class="card card-md">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="couponCode" class="form-label">Enter Coupon Code</label>
+                        <input type="text" id="couponCode" name="couponCode" class="form-control" required>
+                    </div>
+                    <div class="form-footer">
+                        <button type="submit" class="btn btn-primary w-100">Redeem</button>
+                    </div>
+                </div>
+            </form>
+            <div id="message" class="text-center mt-3"></div>
+        </div>
+    </div>
 
     <script>
         const form = document.getElementById("couponForm");
@@ -28,14 +40,14 @@
                 .then(function(response) {
                     const data = response.data;
                     if (data.success) {
-                        messageDiv.innerHTML = `<p style="color: green;">${data.message}</p>`;
+                        messageDiv.innerHTML = `<p class="text-success">${data.message}</p>`;
                     } else {
-                        messageDiv.innerHTML = `<p style="color: red;">${data.message}</p>`;
+                        messageDiv.innerHTML = `<p class="text-danger">${data.message}</p>`;
                     }
                 })
                 .catch(function(error) {
                     console.error('Error:', error);
-                    messageDiv.innerHTML = `<p style="color: red;">An error occurred. Please try again later.</p>`;
+                    messageDiv.innerHTML = `<p class="text-danger">An error occurred. Please try again later.</p>`;
                 });
         });
     </script>

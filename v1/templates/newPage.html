@@ -5,27 +5,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deploy New - {{ site_title }}</title>
+    <link rel="stylesheet" href="https://unpkg.com/@tabler/core@latest/dist/css/tabler.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
 </head>
 
 <body>
     {% include 'header.html' %}
-    <div style="width: 100%; display: flex;">
-        <div class="servers_list" style="text-align: left;">
-            <label class="title">Create new server</label>
-            <hr style="margin-left: -25px;margin-right: -25px;border: 1px solid rgba(0,0,0,0.25);">
-            <div class="box1">
-                <label>Image:</label>
-                <select class="os_list">
-                    {% for image in images %}
-                    <option value="{{ image }}">{{ image }}</option>
-                    {% endfor %}
-                </select>
-                <button class="createbtn" onclick="create_vm()">Create</button>
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Create New Server</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Image:</label>
+                            <select class="form-select" id="os_list">
+                                {% for image in images %}
+                                <option value="{{ image }}">{{ image }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button class="btn btn-primary w-100" onclick="create_vm()">Create</button>
+                    </div>
+                </div>
+                <div class="new_term mt-4"></div>
             </div>
         </div>
     </div>
+
     <script>
         window.get = function(url) {
             return fetch(url);
@@ -35,47 +45,41 @@
             1: "red",
             2: "lightblue"
         };
-        window.create_new_vm = async function (image) {
+        window.create_new_vm = async function(image) {
             window.add_new_log("Connected to the backend.", {color: "gray"});
             var data = await (await window.get(`/server_creation?image=${image}`)).json();
-            if(data.error){
+            if (data.error) {
                 window.add_new_log(data.message, {color: window.colors[data.message_color]});
-                setTimeout(()=>{
+                setTimeout(() => {
                     window.location.href = "/";
                 }, 10000);
-            }else{
+            } else {
                 var msgs = data.output.split("\n");
-                for(let msg of msgs){
+                for (let msg of msgs) {
                     window.add_new_log(msg);
                 }
-                setTimeout(()=>{
+                setTimeout(() => {
                     window.location.href = data.redirect;
                 }, 10000);
             }
         }
-        async function create_vm(){
-            let seperator = `<hr style="margin-left: -25px;margin-right: -25px;border: 1px solid rgba(0,0,0,0.25);">`;
-            let mainbox = document.querySelector(".servers_list");
+        async function create_vm() {
+            let mainbox = document.querySelector(".new_term");
             let hr = document.createElement("hr");
             mainbox.append(hr);
-            hr.outerHTML = seperator;
-            document.querySelector(".box1").dataset["creating"] = '';
             document.querySelector("button").disabled = document.querySelector("select").disabled = true;
-            document.querySelector(".box1 > label").style.color = "gray";
-            let new_term = document.createElement("div");
-            mainbox.append(new_term);
-            new_term.className = "new_term";
-            window.add_new_log = function(text, data){
+            document.querySelector(".form-label").style.color = "gray";
+            window.add_new_log = function(text, data) {
                 var span = document.createElement("span");
                 span.innerText = text;
-                if(data !== undefined){
+                if (data !== undefined) {
                     Object.keys(data).forEach(key => {
                         span.style[key] = data[key];
                     });
                 }
-                new_term.append(span);
+                mainbox.append(span);
             }
-            await window.create_new_vm(document.querySelector("select").value);
+            await window.create_new_vm(document.querySelector("#os_list").value);
         }
     </script>
 </body>

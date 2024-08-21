@@ -1,15 +1,32 @@
-<link rel="stylesheet" href="{{ url_for('static', filename='css/header.css') }}"/>
+<link rel="stylesheet" href="https://unpkg.com/@tabler/core@latest/dist/css/tabler.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/header.css') }}" />
 <script src="{{ url_for('static', filename='js/header.js') }}"></script>
-<header class="header">
-    <div class="leftheader">
-        <div id="logobox"></div>
-        <div class="leftitems" onclick="goto('{{ url_for('home') }}')"><span>Dashboard</span></div>
-        <div class="leftitems" onclick="goto('{{ url_for('create_new') }}')"><span>New</s pan></div>
-        <div class="leftitems" onclick="goto('{{ url_for('earn_coins') }}')"><span>Earn</span></div>
-        <div class="leftitems" onclick="goto('{{ url_for('coupons') }}')"><span>Coupon</span></div>
-    </div>
-    <div class="rightheader">
-        <span>{{ user.username }}</span>
-        <div class="profile" style="background: url('https://cdn.discordapp.com/avatars/{{ user.id }}/{{  user.avatar_hash }}.webp?size=64'); background-size: contain;"></div>
+
+<header class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
+    <div class="container-fluid">
+        <!-- Left Header: Logo and Navigation Items -->
+        <div class="navbar-brand" id="logobox">
+            <!-- You can add your logo inside this div -->
+        </div>
+        <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('home') }}">Dashboard</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('create_new') }}">New</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('earn_coins') }}">Earn</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('coupons') }}">Coupon</a>
+            </li>
+        </ul>
+        
+        <!-- Right Header: User Profile -->
+        <div class="d-flex align-items-center">
+            <span class="me-3">{{ user.username }}</span>
+            <div class="avatar avatar-md" style="background-image: url('https://cdn.discordapp.com/avatars/{{ user.id }}/{{ user.avatar_hash }}.webp?size=64')"></div>
+        </div>
     </div>
 </header>
