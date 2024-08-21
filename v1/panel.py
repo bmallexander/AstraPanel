@@ -664,6 +664,7 @@ def update_server_status(username, container_name, status):
 
 
 @app.route("/api/suspend", methods=["POST"])
+@requires_authorization
 def suspend():
     try:
         data = request.get_json()  # Parse JSON data
@@ -687,8 +688,8 @@ def suspend():
         container.stop()
 
         # Update the server status to "suspended"
-        user = "admin"  # Replace with actual user fetching logic
-        update_server_status(user, container.name, "suspended")
+        user = discord.fetch_user()  # Fetch the current user
+        update_server_status(user.username, container.name, "suspended")
 
         # Update the suspended status file
         suspended_status = {}
@@ -711,50 +712,8 @@ def suspend():
         return jsonify({"success": False, "error": "Error suspending server"}), 500
 
 
-@app.route("/api/unsuspend", methods=["POST"])
-@requires_authorization
-def unsuspend():
-    try:
-        data = request.get_json()
-        server_name = data.get("name")  # Get the server name from the request
 
-        if not check_name(server_name):
-            return jsonify({"success": False, "error": "Invalid server name"}), 400
 
-        # Find the container by name
-        container = None
-        for c in client.containers.list(all=True):
-            if c.name == server_name:
-                container = c
-                break
-        
-        if container is None:
-            return jsonify({"success": False, "error": "Container not found"}), 404
-
-        container_id = container.id  # Get the container ID
-
-        # Check if the container is in suspended state
-        if not os.path.exists(SUSPENDED_STATUS_FILE):
-            return jsonify({"success": False, "error": "No suspended status file found"}), 404
-    
-        with open(SUSPENDED_STATUS_FILE, 'r') as f:
-            suspended_status = json.load(f)
-
-        if container_id not in suspended_status or suspended_status[container_id]['status'] != 'suspended':
-            return jsonify({"success": False, "error": "Container is not suspended"}), 400
-
-        container.start()
-
-        # Remove from suspended status file
-        suspended_status.pop(container_id, None)
-        with open(SUSPENDED_STATUS_FILE, 'w') as f:
-            json.dump(suspended_status, f, indent=4)
-
-        return jsonify({"success": True})
-
-    except Exception as e:
-        print(f"Error unsuspending container: {e}")
-        return jsonify({"success": False, "error": "Error unsuspending server"}), 500
 
 
 
