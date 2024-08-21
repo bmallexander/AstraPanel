@@ -470,12 +470,10 @@ def allowed_file(filename):
 @app.route("/file_explorer")
 @requires_authorization
 def file_explorer():
-    container_id = request.args.get("container_id")  # Fetch container ID
-    user = discord.fetch_user()
+    container_id = request.args.get("container_id") 
     
     # Debug: Print available servers
-    available_servers = [server.container_name for server in get_user_servers(user.username)]
-    print(f"Available servers: {available_servers}")
+    available_servers = [server.container_name for server in get_user_servers()]
 
     # Ensure that the provided container_id is in the user's list of servers
     if container_id not in available_servers:
