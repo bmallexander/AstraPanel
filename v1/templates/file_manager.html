@@ -6,95 +6,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Manager - {{ site_title }}</title>
     <link rel="stylesheet" href="https://unpkg.com/@tabler/core@latest/dist/css/tabler.min.css">
-    <style>
-        .file-list {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        .file-list li {
-            margin-bottom: 10px;
-        }
-
-        .btn {
-            margin-right: 5px;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
 </head>
 
 <body>
     {% include 'header.html' %}
     <div class="container">
-        <h1 class="my-4">File Manager</h1>
-
-        <!-- Upload Form -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <h4 class="card-title">Upload a File</h4>
-                <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
-                    <div class="form-group">
-                        <input type="file" name="file" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="container_id">Container ID (optional):</label>
-                        <input type="text" name="container_id" class="form-control">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Upload</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Uploaded Files -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <h4 class="card-title">Uploaded Files</h4>
-                <ul class="file-list">
+        <h3>File Manager</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <h4>Local Files</h4>
+                <ul>
                     {% for file in uploaded_files %}
-                    <li>
-                        <a href="{{ url_for('download_file', filename=file) }}" class="btn btn-link">{{ file }}</a>
-                        {% if file.endswith('.zip') %}
-                        <button class="btn btn-success" onclick="unzipFile('{{ file }}')">Unzip</button>
-                        {% endif %}
-                    </li>
+                    <li><a href="{{ url_for('download', filename=file) }}">{{ file }}</a></li>
                     {% endfor %}
                 </ul>
             </div>
-        </div>
-
-        <!-- Files from Docker Containers -->
-        <div class="card">
-            <div class="card-body">
-                <h4 class="card-title">Files from Docker Containers</h4>
-                <ul class="file-list">
+            <div class="col-md-6">
+                <h4>Container Files</h4>
+                <ul>
                     {% for container, files in container_files.items() %}
-                    <li>
-                        <strong>Container: {{ container }}</strong>
-                        <ul>
-                            {% for file in files %}
-                            <li>{{ file }}</li>
-                            {% endfor %}
-                        </ul>
-                    </li>
+                    <h5>{{ container }}</h5>
+                    <ul>
+                        {% for file in files %}
+                        <li>{{ file }}</li>
+                        {% endfor %}
+                    </ul>
                     {% endfor %}
                 </ul>
             </div>
         </div>
+        <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <input type="hidden" name="containerid" value="{{ container_id }}">
+            <button type="submit">Upload File</button>
+        </form>
+        <form action="{{ url_for('unzip_file', filename='your_zip_file.zip') }}" method="POST">
+            <button type="submit">Unzip File</button>
+        </form>
     </div>
-
-    <script>
-        function unzipFile(filename) {
-            fetch(`/unzip/${filename}`, { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('File unzipped successfully');
-                        location.reload();
-                    } else {
-                        alert(`Error: ${data.message}`);
-                    }
-                });
-        }
-    </script>
 </body>
 
 </html>

@@ -461,63 +461,56 @@ def create_server_task():
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'zip'
 
-@app.route("/files", methods=["GET"])
+@app.route("/file_explorer")
 @requires_authorization
-def list_files():
+def file_explorer():
+    container_name = request.args.get("container_id")
     user = discord.fetch_user()
     servers = get_user_servers(user.username)
-    
-    # List files in local directory
+
+    if container_name not in [server.container_name for server in servers]:
+        return jsonify({"error": True, "message": "Container not found"}), 404
+
     local_files = os.listdir(app.config['UPLOAD_FOLDER'])
-    
+
+    # Get container files
     container_files = {}
-    for server in servers:
-        container = client.containers.get(server.container_name)
-        try:
-            # Get list of files from container's directory
-            bits, stat = container.get_archive('/path/in/container')
-            file_list = []
-            for member in stat:
-                file_list.append(member['path'])
-            container_files[server.container_name] = file_list
-        except Exception as e:
-            container_files[server.container_name] = [f"Error fetching files: {e}"]
+    container = client.containers.get(container_name)
+    try:
+        bits, stat = container.get_archive('/')
+        file_list = [member['path'] for member in stat]
+        container_files[container_name] = file_list
+    except Exception as e:
+        container_files[container_name] = [f"Error fetching files: {e}"]
 
     return render_template("file_manager.html", uploaded_files=local_files, container_files=container_files, site_title=SITE_TITLE)
 
 
-@app.route("/upload", methods=["POST"])
+
+
+@app.route("/upload", methods=['POST'])
 @requires_authorization
-def upload_file():
-    if 'file' not in request.files:
-        return jsonify({"success": False, "message": "No file part"})
-    
+def upload():
     file = request.files['file']
-    if file.filename == '':
-        return jsonify({"success": False, "message": "No selected file"})
-    
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
+    container_id = request.form['containerid']
+    filename = secure_filename(file.filename)
+    if not filename:
+        return jsonify({"message": "No file selected"}), 400
 
-        # Upload to Docker container
-        container_id = request.form.get('container_id')  # Get container ID from form data
-        if container_id:
-            try:
-                upload_to_container(container_id, file, filename)
-                return jsonify({"success": True, "message": "File uploaded successfully to container"})
-            except Exception as e:
-                return jsonify({"success": False, "message": f"Error uploading to container: {e}"})
-        
-        return jsonify({"success": True, "message": "File uploaded successfully"})
-    
-    return jsonify({"success": False, "message": "Invalid file format. Only .zip files are allowed"})
+    try:
+        file_stream = io.BytesIO(file.read())
+        upload_to_container(container_id, file_stream, filename)
+        return jsonify({"message": "File uploaded successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
 
-@app.route("/download/<filename>", methods=["GET"])
+
+
+@app.route("/download/<path:filename>")
 @requires_authorization
-def download_file(filename):
+def download(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 
 @app.route("/unzip/<filename>", methods=["POST"])
 @requires_authorization
@@ -537,6 +530,8 @@ def unzip_file(filename):
         return jsonify({"success": True, "message": "File unzipped successfully"})
     except Exception as e:
         return jsonify({"success": False, "message": f"Error unzipping file: {e}"})
+
+
 
 
 if __name__ == "__main__":
