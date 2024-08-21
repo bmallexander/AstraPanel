@@ -485,7 +485,7 @@ def restart():
         return jsonify({"success": True})
     except Exception as e:
         print("-" * os.get_terminal_size().columns, e, "-" * os.get_terminal_size().columns)
-        return jsonify({"success": False, "error": "Error restarting server"}), 500
+        return jsonify({"success": False, "error": "Error restarting server, You may be suspended !"}), 500
 
     
 @app.route("/api/delete", methods=["POST"])
@@ -547,7 +547,7 @@ def start():
         return jsonify({"success": True})
     except Exception as e:
         print("-" * 40, e, "-" * 40)
-        return jsonify({"success": False, "error": "Error starting server"}), 500
+        return jsonify({"success": False, "error": "Error starting server, You may be suspended !"}), 500
 
 def is_suspended(container_id):
     if not os.path.exists(SUSPENDED_STATUS_FILE):
