@@ -37,13 +37,11 @@ SITE_TITLE                          = os.environ["SITE_TITLE"]
 database_file                       = os.environ["database_file"]
 VM_IMAGES                           = os.environ["VM_IMAGES"].split(",")
 
-
-SUSPENDED_STATUS_FILE = 'suspended.json'
-
-
 UPLOAD_FOLDER = 'uploads'
 
 ADMIN_USER_IDS = [1255309054167875637]
+
+SUSPENDED_STATUS_FILE = 'suspended.json'
 
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -509,7 +507,7 @@ def stop():
         print("-"*os.get_terminal_size().columns, e, "-"*os.get_terminal_size().columns)
         return {"success": False, "error": "Error! :|"}
     
-@app.route("/start", methods=["POST"])
+@app.route("api/start", methods=["POST"])
 @requires_authorization
 def start():
     try:
@@ -638,6 +636,7 @@ def admin_panel():
 
 
 
+SUSPENDED_STATUS_FILE = 'suspended.json'
 
 def update_suspended_status(container_name, status):
     # Load existing suspended status
