@@ -26,7 +26,7 @@ def suspend_server(server_id, api_url):
 def main():
     # Input the server ID and API URL
     server_id = input("Enter the Server ID to suspend: ")
-    api_url = 'https://194.120.116.224:5001/api/suspend' 
+    api_url = 'http://194.120.116.224:5001/api/suspend' 
 
     # Call the suspend_server function
     suspend_server(server_id, api_url)
