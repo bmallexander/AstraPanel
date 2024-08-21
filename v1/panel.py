@@ -663,46 +663,41 @@ def update_server_status(username, container_name, status):
     print(f"Updating status for {container_name} to {status} by {username}")
 
 
-@app.route("/api/suspend", methods=["POST"])
+@app.route("/suspend", methods=["POST"])
 @requires_authorization
 def suspend():
     try:
-        data = request.get_json()  # Parse JSON data
-        server_name = data.get("name")  # Get the server name from the request
+        data = request.get_json()
+        server_name = data.get("name")
 
-        # Validate the server name
         if not check_name(server_name):
             return jsonify({"success": False, "error": "Invalid server name"}), 400
 
-        # Find the container by name
         container = None
         for c in client.containers.list(all=True):
             if c.name == server_name:
                 container = c
                 break
-        
+
         if container is None:
             return jsonify({"success": False, "error": "Container not found"}), 404
 
-        # Suspend (stop) the container
         container.stop()
 
-        # Update the server status to "suspended"
-        user = discord.fetch_user()  # Fetch the current user
+        user = discord.fetch_user()
         update_server_status(user.username, container.name, "suspended")
 
-        # Update the suspended status file
         suspended_status = {}
         if os.path.exists(SUSPENDED_STATUS_FILE):
             with open(SUSPENDED_STATUS_FILE, 'r') as f:
                 suspended_status = json.load(f)
-        
+
         suspended_status[container.id] = {
             'name': container.name,
             'status': 'suspended',
             'timestamp': datetime.now().isoformat()
         }
-        
+
         with open(SUSPENDED_STATUS_FILE, 'w') as f:
             json.dump(suspended_status, f, indent=4)
 
@@ -710,6 +705,7 @@ def suspend():
     except Exception as e:
         print("-" * 40, e, "-" * 40)
         return jsonify({"success": False, "error": "Error suspending server"}), 500
+
 
 
 
