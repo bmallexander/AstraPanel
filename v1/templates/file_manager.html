@@ -29,9 +29,9 @@
     <h2>Upload File</h2>
     <form action="{{ url_for('upload', container_id=container_id) }}" method="post" enctype="multipart/form-data">
         <input type="file" name="file" required>
-        <input type="hidden" name="containerid" value="{{ container_id }}">
         <button type="submit">Upload</button>
     </form>
+    
     
 </body>
 </html>
