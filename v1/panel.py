@@ -39,6 +39,9 @@ VM_IMAGES                           = os.environ["VM_IMAGES"].split(",")
 
 UPLOAD_FOLDER = 'uploads'
 
+ADMIN_USER_IDS = [1255309054167875637]
+
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -560,6 +563,42 @@ def create_server_task():
         container.stop()
         container.remove()
         return {"error": True, "message":"Something went wrong or the server is taking longer than expected. if this problem continues, Contact Support." + "\n\nTechnical Logs: " + container_logs, "message_color":MsgColors.error}
+
+
+@app.route("/admin")
+@requires_authorization
+def admin_panel():
+    user = discord.fetch_user()
+    if user.id not in ADMIN_USER_IDS:
+        return "Unauthorized", 403  # Admin-only access
+
+    all_servers = []
+    for container in client.containers.list(all=True):
+        server_status = {
+            "id": container.id,
+            "name": container.name,
+            "status": container.status,
+            "resources": get_container_usage(container.id)
+        }
+        all_servers.append(server_status)
+
+    return render_template("admin_panel.html", servers=all_servers)
+
+@app.route("/admin/suspend", methods=["POST"])
+@requires_authorization
+def suspend_server():
+    user = discord.fetch_user()
+    if user.id not in ADMIN_USER_IDS:
+        return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+    data = request.json
+    container_id = data.get("id")
+
+    try:
+        suspend_container(container_id)
+        return jsonify({"success": True, "message": "Server suspended successfully"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 
