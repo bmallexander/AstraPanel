@@ -6,6 +6,10 @@ from CurrencyHandler import CurrencyManager
 from datetime import datetime, timedelta
 from flask_discord import DiscordOAuth2Session, requires_authorization, Unauthorized
 from flask import jsonify, session
+from flask import send_from_directory, secure_filename
+import os
+import io
+import zipfile
 import json
 
 load_dotenv()
@@ -32,6 +36,11 @@ database_file                       = os.environ["database_file"]
 VM_IMAGES                           = os.environ["VM_IMAGES"].split(",")
 
 
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
 discord = DiscordOAuth2Session(app)
 socketio = SocketIO(app, ping_interval=10, async_handlers=False)
 
@@ -56,6 +65,21 @@ class MsgColors:
 def set_winsize(fd, row, col, xpix=0, ypix=0):
     winsize = struct.pack("HHHH", row, col, xpix, ypix)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
+
+def upload_to_container(container_id, file_stream, filename):
+    client = docker.from_env()
+    container = client.containers.get(container_id)
+    
+    # Create a ZipFile object in memory
+    zip_stream = io.BytesIO()
+    with zipfile.ZipFile(zip_stream, 'w') as zip_file:
+        zip_file.writestr(filename, file_stream.read())
+
+    zip_stream.seek(0)
+    
+    # Upload the zip file to the Docker container
+    container.put_archive('/path/in/container', zip_stream.read())
+
 
 @app.route("/xterm")
 @requires_authorization
@@ -429,6 +453,88 @@ def create_server_task():
         container.stop()
         container.remove()
         return {"error": True, "message":"Something went wrong or the server is taking longer than expected. if this problem continues, Contact Support." + "\n\nTechnical Logs: " + container_logs, "message_color":MsgColors.error}
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'zip'
+
+@app.route("/files", methods=["GET"])
+@requires_authorization
+def list_files():
+    user = discord.fetch_user()
+    servers = get_user_servers(user.username)
+    
+    # List files in local directory
+    local_files = os.listdir(app.config['UPLOAD_FOLDER'])
+    
+    container_files = {}
+    for server in servers:
+        container = client.containers.get(server.container_name)
+        try:
+            # Get list of files from container's directory
+            bits, stat = container.get_archive('/path/in/container')
+            file_list = []
+            for member in stat:
+                file_list.append(member['path'])
+            container_files[server.container_name] = file_list
+        except Exception as e:
+            container_files[server.container_name] = [f"Error fetching files: {e}"]
+
+    return render_template("file_manager.html", uploaded_files=local_files, container_files=container_files, site_title=SITE_TITLE)
+
+
+@app.route("/upload", methods=["POST"])
+@requires_authorization
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({"success": False, "message": "No file part"})
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"success": False, "message": "No selected file"})
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+
+        # Upload to Docker container
+        container_id = request.form.get('container_id')  # Get container ID from form data
+        if container_id:
+            try:
+                upload_to_container(container_id, file, filename)
+                return jsonify({"success": True, "message": "File uploaded successfully to container"})
+            except Exception as e:
+                return jsonify({"success": False, "message": f"Error uploading to container: {e}"})
+        
+        return jsonify({"success": True, "message": "File uploaded successfully"})
+    
+    return jsonify({"success": False, "message": "Invalid file format. Only .zip files are allowed"})
+
+@app.route("/download/<filename>", methods=["GET"])
+@requires_authorization
+def download_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route("/unzip/<filename>", methods=["POST"])
+@requires_authorization
+def unzip_file(filename):
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    if not os.path.exists(file_path):
+        return jsonify({"success": False, "message": "File does not exist"})
+    
+    if filename.rsplit('.', 1)[1].lower() != 'zip':
+        return jsonify({"success": False, "message": "Not a zip file"})
+
+    try:
+        with zipfile.ZipFile(file_path, 'r') as zip_ref:
+            extract_path = os.path.join(app.config['UPLOAD_FOLDER'], filename.rsplit('.', 1)[0])
+            os.makedirs(extract_path, exist_ok=True)
+            zip_ref.extractall(extract_path)
+        return jsonify({"success": True, "message": "File unzipped successfully"})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error unzipping file: {e}"})
+
 
 if __name__ == "__main__":
     app.run(ssl_context=(os.environ["SSL_CERTIFICATE_FILE"], os.environ["SSL_KEY_FILE"]), debug=True, port=5001)
