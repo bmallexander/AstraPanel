@@ -468,20 +468,20 @@ def allowed_file(filename):
 @app.route("/file_explorer")
 @requires_authorization
 def file_explorer():
-    container_name = request.args.get("container_id")
+    container_id = request.args.get("container_id")  # Fetch container ID
     user = discord.fetch_user()
-    servers = get_user_servers(user.username)
-
+    
     # Debug: Print available servers
-    print(f"Available servers: {[server.container_name for server in servers]}")
+    available_servers = [server.container_name for server in get_user_servers(user.username)]
+    print(f"Available servers: {available_servers}")
 
-    # Check if the container exists and is accessible
-    if container_name not in [server.container_name for server in servers]:
-        return jsonify({"error": True, "message": "Container not found"}), 404
+    # Ensure that the provided container_id is in the user's list of servers
+    if container_id not in available_servers:
+        return jsonify({"error": True, "message": "Container not found or access denied"}), 403
 
     # Try to access the container
     try:
-        container = client.containers.get(container_name)
+        container = client.containers.get(container_id)
     except docker.errors.NotFound:
         return jsonify({"error": True, "message": "Container not found on the host system"}), 404
     except Exception as e:
@@ -491,9 +491,9 @@ def file_explorer():
     container_files = {}
     try:
         bits, stat = container.get_archive('/')
-        container_files[container_name] = [member['path'] for member in stat]
+        container_files[container_id] = [member['path'] for member in stat]
     except Exception as e:
-        container_files[container_name] = [f"Error fetching files: {e}"]
+        container_files[container_id] = [f"Error fetching files: {e}"]
 
     # List files in the upload folder on the host system
     local_files = os.listdir(app.config['UPLOAD_FOLDER'])
