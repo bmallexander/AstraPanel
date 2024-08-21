@@ -507,7 +507,7 @@ def stop():
         print("-"*os.get_terminal_size().columns, e, "-"*os.get_terminal_size().columns)
         return {"success": False, "error": "Error! :|"}
     
-@app.route("api/start", methods=["POST"])
+@app.route("/api/start", methods=["POST"])
 @requires_authorization
 def start():
     try:
