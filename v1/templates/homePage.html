@@ -178,11 +178,11 @@
                 </div>
             </div>
         </div>
-        <script src="{{ url_for('static', filename='js/home.js') }}"></script>
-        <script>
-            function open_file_explorer(containerId) {
-                window.location.href = `/file_explorer?container_id=${encodeURIComponent(containerId)}`;
-            }
-        </script>
-    </body>
-    </html>
+    <script src="{{ url_for('static', filename='js/home.js') }}"></script>
+    <script>
+        function open_file_explorer(containerId) {
+            window.location.href = `/file_explorer?container_id=${encodeURIComponent(containerId)}`;
+        }
+    </script>
+</body>
+</html>
