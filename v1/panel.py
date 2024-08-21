@@ -6,7 +6,9 @@ from CurrencyHandler import CurrencyManager
 from datetime import datetime, timedelta
 from flask_discord import DiscordOAuth2Session, requires_authorization, Unauthorized
 from flask import jsonify, session
-from flask import send_from_directory, secure_filename
+from flask import send_from_directory
+from werkzeug.utils import secure_filename
+
 import os
 import io
 import zipfile
