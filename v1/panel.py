@@ -518,13 +518,11 @@ def start():
 
         # Check if the server is suspended
         is_suspended = False
-        with open(database_file, 'r') as f:
-            for line in f:
-                if line.startswith(f"{user.username}|{data}|"):
-                    status = line.strip().split('|')[2]
-                    if status == "suspended":
-                        is_suspended = True
-                        break
+        if os.path.exists(SUSPENDED_STATUS_FILE):
+            with open(SUSPENDED_STATUS_FILE, 'r') as f:
+                suspended_status = json.load(f)
+                if data in suspended_status and suspended_status[data]['status'] == "suspended":
+                    is_suspended = True
 
         if is_suspended:
             return {"success": False, "error": "Server is suspended and cannot be started"}
@@ -625,7 +623,26 @@ def admin_panel():
 
 
 
-SUSPENDED_STATUS_FILE = 'suspended_status.json'
+SUSPENDED_STATUS_FILE = 'suspended.json'
+
+def update_suspended_status(container_name, status):
+    # Load existing suspended status
+    if os.path.exists(SUSPENDED_STATUS_FILE):
+        with open(SUSPENDED_STATUS_FILE, 'r') as f:
+            suspended_status = json.load(f)
+    else:
+        suspended_status = {}
+
+    # Update the status
+    suspended_status[container_name] = {
+        'name': container_name,
+        'status': status,
+        'timestamp': datetime.now().isoformat()
+    }
+
+    # Save the updated status to the JSON file
+    with open(SUSPENDED_STATUS_FILE, 'w') as f:
+        json.dump(suspended_status, f, indent=4)
 
 
 
@@ -657,7 +674,7 @@ def suspend():
         for c in client.containers.list(all=True):
             if c.name == server_name:
                 container = c
-                break
+                break   
         
         if container is None:
             return jsonify({"success": False, "error": "Container not found"}), 404
@@ -668,6 +685,7 @@ def suspend():
         # Update the server status to "suspended"
         user = "admin"  # Replace with actual user fetching logic
         update_server_status(user, container.name, "suspended")
+        update_suspended_status(container.name, "suspended")
 
         return jsonify({"success": True})
     except Exception as e:
