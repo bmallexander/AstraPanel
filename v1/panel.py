@@ -715,17 +715,27 @@ def suspend():
 def unsuspend():
     try:
         data = request.get_json()
-        container_id = data.get("id")
+        server_name = data.get("name")  # Get the server name from the request
 
-        if not check_id(container_id):
-            return jsonify({"success": False, "error": "Error! :|"}), 400
+        if not check_name(server_name):
+            return jsonify({"success": False, "error": "Invalid server name"}), 400
 
-        container = client.containers.get(container_id)
+        # Find the container by name
+        container = None
+        for c in client.containers.list(all=True):
+            if c.name == server_name:
+                container = c
+                break
+        
+        if container is None:
+            return jsonify({"success": False, "error": "Container not found"}), 404
+
+        container_id = container.id  # Get the container ID
 
         # Check if the container is in suspended state
         if not os.path.exists(SUSPENDED_STATUS_FILE):
             return jsonify({"success": False, "error": "No suspended status file found"}), 404
-
+    
         with open(SUSPENDED_STATUS_FILE, 'r') as f:
             suspended_status = json.load(f)
 
