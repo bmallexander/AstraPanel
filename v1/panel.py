@@ -81,7 +81,7 @@ def upload_to_container(container_id, file_stream, filename):
     zip_stream.seek(0)
     
     # Upload the zip file to the Docker container
-    container.put_archive('/path/in/container', zip_stream.read())
+    container.put_archive('/', zip_stream.read())
 
 
 @app.route("/xterm")
@@ -468,18 +468,20 @@ def file_explorer():
     user = discord.fetch_user()
     servers = get_user_servers(user.username)
 
+    # Check if the container exists and is owned by the user
     if container_name not in [server.container_name for server in servers]:
         return jsonify({"error": True, "message": "Container not found"}), 404
 
     local_files = os.listdir(app.config['UPLOAD_FOLDER'])
-
-    # Get container files
     container_files = {}
-    container = client.containers.get(container_name)
+    
     try:
+        container = client.containers.get(container_name)
         bits, stat = container.get_archive('/')
         file_list = [member['path'] for member in stat]
         container_files[container_name] = file_list
+    except docker.errors.NotFound:
+        return jsonify({"error": True, "message": "Container not found"}), 404
     except Exception as e:
         container_files[container_name] = [f"Error fetching files: {e}"]
 
@@ -494,6 +496,7 @@ def upload():
     file = request.files['file']
     container_id = request.form['containerid']
     filename = secure_filename(file.filename)
+    
     if not filename:
         return jsonify({"message": "No file selected"}), 400
 
@@ -516,6 +519,7 @@ def download(filename):
 @requires_authorization
 def unzip_file(filename):
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
     if not os.path.exists(file_path):
         return jsonify({"success": False, "message": "File does not exist"})
     
@@ -530,7 +534,6 @@ def unzip_file(filename):
         return jsonify({"success": True, "message": "File unzipped successfully"})
     except Exception as e:
         return jsonify({"success": False, "message": f"Error unzipping file: {e}"})
-
 
 
 
