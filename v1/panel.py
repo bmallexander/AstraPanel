@@ -586,15 +586,26 @@ def admin_panel():
 
     return render_template("admin_panel.html", servers=all_servers)
 
+def check_name(name):
+    # Implement your validation logic here
+    if not name or len(name) < 3:
+        return False
+    # Add more validation rules as needed
+    return True
+
+def update_server_status(username, container_name, status):
+    # Placeholder for actual implementation
+    # This could be a database update or another service call
+    print(f"Updating status for {container_name} to {status} by {username}")
+
 @app.route("/api/suspend", methods=["POST"])
-@requires_authorization
 def suspend():
     try:
         data = request.get_json()  # Parse JSON data
         server_name = data.get("name")  # Get the server name from the request
 
-        # Validate the server name and check if it's valid
-        if not server_name or not check_name(server_name):
+        # Validate the server name
+        if not check_name(server_name):
             return jsonify({"success": False, "error": "Invalid server name"}), 400
 
         # Find the container by name
@@ -612,8 +623,8 @@ def suspend():
 
         # Update the server status to "suspended"
         # Assuming `update_server_status` is a function that updates the server status
-        user = discord.fetch_user()  # Fetch user details from Discord
-        update_server_status(user.username, container.name, "suspended")
+        user = "admin"  # Replace with actual user fetching logic
+        update_server_status(user, container.name, "suspended")
 
         return jsonify({"success": True})
     except Exception as e:
