@@ -7,142 +7,6 @@
     <title>Home - {{ site_title }}</title>
     <link rel="stylesheet" href="https://unpkg.com/@tabler/core@latest/dist/css/tabler.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #121212;
-            color: #e0e0e0;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            padding: 20px;
-        }
-
-        .card {
-            border-radius: 8px;
-            background-color: #1e1e1e;
-            color: #e0e0e0;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        .card-header {
-            background-color: #333;
-            color: #fff;
-            border-bottom: 1px solid #444;
-            border-radius: 8px 8px 0 0;
-            padding: 16px;
-        }
-
-        .table thead th {
-            background-color: #333;
-            color: #fff;
-        }
-
-        .table tbody tr:nth-child(even) {
-            background-color: #252525;
-        }
-
-        .btn-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            margin: 0 4px;
-            border: none;
-            background-color: transparent;
-        }
-
-        .btn-success {
-            color: #28a745;
-        }
-
-        .btn-danger {
-            color: #dc3545;
-        }
-
-        .btn-warning {
-            color: #ffc107;
-        }
-
-        .btn-info {
-            color: #17a2b8;
-        }
-
-        .btn-outline-danger {
-            color: #dc3545;
-            border: 1px solid #dc3545;
-        }
-
-        .btn-outline-danger:hover {
-            background-color: #dc3545;
-            color: #fff;
-        }
-
-        .btn-success:hover {
-            background-color: #28a745;
-            color: #fff;
-        }
-
-        .btn-danger:hover {
-            background-color: #dc3545;
-            color: #fff;
-        }
-
-        .btn-warning:hover {
-            background-color: #ffc107;
-            color: #333;
-        }
-
-        .btn-info:hover {
-            background-color: #17a2b8;
-            color: #fff;
-        }
-
-        .btn-icon svg {
-            width: 18px;
-            height: 18px;
-            fill: currentColor;
-        }
-
-        .text-muted {
-            color: #999 !important;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .card-body p {
-            margin: 0;
-            font-size: 1.25rem;
-        }
-
-        .card-title {
-            margin-bottom: 0;
-            color: #fff;
-        }
-
-        @media (max-width: 768px) {
-            .card-body p {
-                font-size: 1rem;
-            }
-
-            .btn-icon {
-                width: 32px;
-                height: 32px;
-            }
-
-            .btn-icon svg {
-                width: 16px;
-                height: 16px;
-            }
-        }
-    </style>
 </head>
 
 <body>
@@ -166,21 +30,21 @@
                             </thead>
                             <tbody>
                                 {% for server in servers %}
-                                <tr>
+                                <tr class="{% if (server.id + 1) % 2 == 0 %}bg-light{% endif %}">
                                     <td>{{ server.id + 1 }}.</td>
                                     <td class="user-select-all">{{ server.container_name }}</td>
                                     <td class="user-select-all">{{ server.ssh_session_line }}</td>
                                     <td class="text-center">
                                         {% if server.status == 1 %}
                                         <button class="btn btn-danger btn-icon" title="Stop" onclick="stop('{{ user.username }}/{{ server.container_name }}')">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
                                                 <path fill="none" d="M0 0h24v24H0z" />
                                                 <path d="M6 6h12v12H6z" />
                                             </svg>
                                         </button>
                                         {% else %}
                                         <button class="btn btn-success btn-icon" title="Start" onclick="start('{{ user.username }}/{{ server.container_name }}')">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
                                                 <path fill="none" d="M0 0h24v24H0z" />
                                                 <path d="M8 5v14l11-7z" />
                                             </svg>
@@ -188,9 +52,9 @@
                                         {% endif %}
                                         <button class="btn btn-warning btn-icon" title="Restart" onclick="restart('{{ user.username }}/{{ server.container_name }}')">
                                             ↻
-                                        </button>
+                                        </button>   
                                         <button class="btn btn-info btn-icon" title="Console" onclick="open_console('{{ user.username }}/{{ server.container_name }}')">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="24" height="24">
                                                 <rect height="10.5" width="12.5" y="2.75" x="1.75"></rect>
                                                 <path d="m8.75 10.25h2.5m-6.5-4.5 2.5 2.25-2.5 2.25"></path>
                                             </svg>
@@ -198,6 +62,10 @@
                                         <button class="btn btn-outline-danger btn-icon" title="Delete" onclick="remove('{{ user.username }}/{{ server.container_name }}')">
                                             ✖
                                         </button>
+                                        <!-- New Button for File Explorer -->
+                                        <!-- <button class="btn btn-secondary btn-icon" title="File Explorer" onclick="open_file_explorer('{{ user.username }}/{{ server.container_name }}')">
+                                            📁
+                                        </button> -->
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -211,7 +79,7 @@
                     </div>
                 </div>
             </div>
-
+            
             <div class="col-lg-4">
                 <div class="card">
                     <div class="card-body text-center">

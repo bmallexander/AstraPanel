@@ -90,6 +90,22 @@ def set_winsize(fd, row, col, xpix=0, ypix=0):
 #         raise Exception(f"Error uploading file to container: {e}")
 
 
+def get_user_plan(user):
+    """
+    Retrieves the user's plan from the database file.
+    """
+    if not os.path.exists(database_file):
+        return "basic"  # Default plan if database file doesn't exist
+
+    with open(database_file, 'r') as f:
+        for line in f:
+            if line.startswith(user):
+                parts = line.strip().split('|')
+                if len(parts) > 2:  # Assuming the plan is stored in the third part
+                    return parts[2]  # The user's plan
+    return "basic"  # Default plan if not found
+
+
 def get_container_usage(container_id):
     try:
         container = client.containers.get(container_id)
@@ -122,6 +138,7 @@ def is_usage_exceeded(container_id, user_plan):
         return True
     
     return False
+
 
 def suspend_container(container_id):
     try:
@@ -469,7 +486,7 @@ def start():
         if not check_id(data): return {"success": False, "error": "Error! :|"}
         
         user = discord.fetch_user()
-        user_plan = get_user_plan(user.username)  # Implement this function to get user's plan
+        user_plan = get_user_plan(user.username)  # Get user's plan
         
         if is_usage_exceeded(data, user_plan):
             return {"success": False, "error": "Server suspended due to exceeding resource limits"}
@@ -510,7 +527,7 @@ def create_server_task():
         return {"error": True, "message": f"Error: {image} is not in available images: {VM_IMAGES}", "message_color": MsgColors.warning}
     
     user = discord.fetch_user()
-    user_plan = get_user_plan(user.username)  # Implement this function to get user's plan
+    user_plan = get_user_plan(user.username)  # Get user's plan
     
     if count_user_servers(user.username) >= SERVER_LIMIT:
         return {"error": True, "message": "Error: Server Limit-reached\n\nLogs:\nFailed to run apt update\nFailed to run apt install tmate\nFailed to run tmate -F\nError: Server Limit-reached", "message_color": MsgColors.warning}
