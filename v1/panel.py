@@ -470,14 +470,23 @@ def earn_coins():
 @requires_authorization
 def restart():
     try:
-        data = request.get_json()["id"]
-        if not check_id(data): return {"success": False, "error": "Error! :|"}
-        tmp = client.containers.get(data)
-        tmp.restart(timeout=5)
-        return {"success": True}
+        data = request.get_json().get("id")
+        
+        if not check_id(data):
+            return jsonify({"success": False, "error": "Invalid server ID"}), 400
+        
+        container = client.containers.get(data)
+
+        # Check if the container is suspended
+        if is_suspended(container.id):
+            return jsonify({"success": False, "error": "Container is suspended"}), 403
+
+        container.restart(timeout=5)
+        return jsonify({"success": True})
     except Exception as e:
-        print("-"*os.get_terminal_size().columns, e, "-"*os.get_terminal_size().columns)
-        return {"success": False, "error": "Error! :|"}
+        print("-" * os.get_terminal_size().columns, e, "-" * os.get_terminal_size().columns)
+        return jsonify({"success": False, "error": "Error restarting server"}), 500
+
     
 @app.route("/api/delete", methods=["POST"])
 @requires_authorization
