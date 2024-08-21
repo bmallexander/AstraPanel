@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Admin Panel - {{ site_title }}</title>
-    <script src="static/js/suspend.js"></script> <!-- Make sure to include this script -->
+    <script src="static/js/suspend.js"></script>
 </head>
 <body>
     <h1>Admin Panel</h1>
@@ -24,7 +24,11 @@
                 <td>{{ server.resources[0] }}</td>
                 <td>{{ server.resources[1] }}</td>
                 <td>
-                    <button onclick="suspendServer('{{ server.name }}')">Suspend</button>
+                    <button
+                        onclick="toggleServer('{{ server.name }}', '{{ server.status }}')"
+                        data-status="{{ server.status }}">
+                        {{ 'Suspend' if server.status == 'Active' else 'Unsuspend' }}
+                    </button>
                 </td>
             </tr>
             {% endfor %}

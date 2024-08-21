@@ -710,6 +710,37 @@ def suspend():
         print("-" * 40, e, "-" * 40)
         return jsonify({"success": False, "error": "Error suspending server"}), 500
 
+@app.route("/api/unsuspend", methods=["POST"])
+@requires_authorization
+def unsuspend():
+    try:
+        data = request.get_json()  # Parse JSON data
+        container_id = data.get("id")  # Get the container ID from the request
+
+        # Validate the container ID
+        if not check_id(container_id):
+            return jsonify({"success": False, "error": "Invalid container ID"}), 400
+
+        # Check if the container is currently suspended
+        if os.path.exists(SUSPENDED_STATUS_FILE):
+            with open(SUSPENDED_STATUS_FILE, 'r') as f:
+                suspended_status = json.load(f)
+                if container_id in suspended_status and suspended_status[container_id]['status'] == 'suspended':
+                    # Remove the suspended status
+                    del suspended_status[container_id]
+                    with open(SUSPENDED_STATUS_FILE, 'w') as f:
+                        json.dump(suspended_status, f, indent=4)
+                    
+                    # Start the container
+                    container = client.containers.get(container_id)
+                    container.start()
+
+                    return jsonify({"success": True})
+
+        return jsonify({"success": False, "error": "Server is not suspended or not found"}), 404
+    except Exception as e:
+        print("-" * 40, e, "-" * 40)
+        return jsonify({"success": False, "error": "Error unsuspending server"}), 500
 
 
 
