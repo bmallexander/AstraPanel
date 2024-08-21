@@ -512,30 +512,34 @@ def start():
         data = request.get_json()["id"]
         if not check_id(data):
             return {"success": False, "error": "Error! :|"}
-
+        
         user = discord.fetch_user()
         user_plan = get_user_plan(user.username)  # Get user's plan
-
+        
         # Check if the server is suspended
         is_suspended = False
         if os.path.exists(SUSPENDED_STATUS_FILE):
             with open(SUSPENDED_STATUS_FILE, 'r') as f:
                 suspended_status = json.load(f)
-                if data in suspended_status and suspended_status[data]['status'] == "suspended":
+                if data in suspended_status and suspended_status[data]['status'] == 'suspended':
                     is_suspended = True
-
+        
         if is_suspended:
             return {"success": False, "error": "Server is suspended and cannot be started"}
-
+        
         if is_usage_exceeded(data, user_plan):
+            # Suspend the server if usage is exceeded
+            suspend_container(data)
             return {"success": False, "error": "Server suspended due to exceeding resource limits"}
-
+        
         container = client.containers.get(data)
         container.start()
         return {"success": True}
+    
     except Exception as e:
         print("-" * os.get_terminal_size().columns, e, "-" * os.get_terminal_size().columns)
         return {"success": False, "error": "Error! :|"}
+
 
 
 
@@ -674,7 +678,7 @@ def suspend():
         for c in client.containers.list(all=True):
             if c.name == server_name:
                 container = c
-                break   
+                break
         
         if container is None:
             return jsonify({"success": False, "error": "Container not found"}), 404
@@ -685,12 +689,27 @@ def suspend():
         # Update the server status to "suspended"
         user = "admin"  # Replace with actual user fetching logic
         update_server_status(user, container.name, "suspended")
-        update_suspended_status(container.name, "suspended")
+
+        # Update the suspended status file
+        suspended_status = {}
+        if os.path.exists(SUSPENDED_STATUS_FILE):
+            with open(SUSPENDED_STATUS_FILE, 'r') as f:
+                suspended_status = json.load(f)
+        
+        suspended_status[container.id] = {
+            'name': container.name,
+            'status': 'suspended',
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        with open(SUSPENDED_STATUS_FILE, 'w') as f:
+            json.dump(suspended_status, f, indent=4)
 
         return jsonify({"success": True})
     except Exception as e:
         print("-" * 40, e, "-" * 40)
         return jsonify({"success": False, "error": "Error suspending server"}), 500
+
 
 
 
