@@ -90,6 +90,72 @@ def set_winsize(fd, row, col, xpix=0, ypix=0):
 #         raise Exception(f"Error uploading file to container: {e}")
 
 
+def get_container_usage(container_id):
+    try:
+        container = client.containers.get(container_id)
+        stats = container.stats(stream=False)
+        
+        cpu_usage = stats['cpu_stats']['cpu_usage']['total_usage']
+        memory_usage = stats['memory_stats']['usage'] / (1024 * 1024)  # Convert to MB
+        
+        return cpu_usage, memory_usage
+    except Exception as e:
+        print(f"Error fetching stats for container {container_id}: {e}")
+        return None, None
+
+
+def is_usage_exceeded(container_id, user_plan):
+    cpu_usage, memory_usage = get_container_usage(container_id)
+    
+    if cpu_usage is None or memory_usage is None:
+        return False
+    
+    with open('plans.json', 'r') as f:
+        plans = json.load(f)
+    
+    plan_limits = plans.get(user_plan, {})
+    
+    cpu_limit = plan_limits.get('cpu_limit', float('inf'))
+    memory_limit = plan_limits.get('memory_limit', float('inf'))
+    
+    if cpu_usage > cpu_limit or memory_usage > memory_limit:
+        return True
+    
+    return False
+
+def suspend_container(container_id):
+    try:
+        container = client.containers.get(container_id)
+        container.stop()
+        
+        user = discord.fetch_user()
+        update_server_status(user.username, container.name, "suspended")
+        
+        print(f"Container {container_id} suspended due to exceeding resource limits.")
+    except Exception as e:
+        print(f"Error suspending container {container_id}: {e}")
+
+
+
+def update_server_status(user, container_name, status):
+    if not os.path.exists(database_file):
+        return
+    
+    with open(database_file, 'r') as f:
+        lines = f.readlines()
+    
+    with open(database_file, 'w') as f:
+        for line in lines:
+            if line.startswith(f"{user}|{container_name}|"):
+                parts = line.strip().split('|')
+                if len(parts) == 3:
+                    f.write(f"{user}|{container_name}|{status}\n")
+                else:
+                    f.write(line)
+            else:
+                f.write(line)
+
+
 @app.route("/xterm")
 @requires_authorization
 def index():
@@ -401,12 +467,20 @@ def start():
     try:
         data = request.get_json()["id"]
         if not check_id(data): return {"success": False, "error": "Error! :|"}
+        
+        user = discord.fetch_user()
+        user_plan = get_user_plan(user.username)  # Implement this function to get user's plan
+        
+        if is_usage_exceeded(data, user_plan):
+            return {"success": False, "error": "Server suspended due to exceeding resource limits"}
+        
         tmp = client.containers.get(data)
         tmp.start()
         return {"success": True}
     except Exception as e:
         print("-"*os.get_terminal_size().columns, e, "-"*os.get_terminal_size().columns)
         return {"success": False, "error": "Error! :|"}
+
 
 def get_ssh_session_line(container):
     def get_ssh_session(logs):
@@ -429,14 +503,21 @@ def get_ssh_session_line(container):
     return ssh_session_line
 
 @app.route("/server_creation")
+@requires_authorization
 def create_server_task():
     image = request.args.get("image")
     if not image in VM_IMAGES:
         return {"error": True, "message": f"Error: {image} is not in available images: {VM_IMAGES}", "message_color": MsgColors.warning}
+    
     user = discord.fetch_user()
+    user_plan = get_user_plan(user.username)  # Implement this function to get user's plan
+    
     if count_user_servers(user.username) >= SERVER_LIMIT:
         return {"error": True, "message": "Error: Server Limit-reached\n\nLogs:\nFailed to run apt update\nFailed to run apt install tmate\nFailed to run tmate -F\nError: Server Limit-reached", "message_color": MsgColors.warning}
-
+    
+    if is_usage_exceeded(user.username, user_plan):
+        return {"error": True, "message": "Error: Exceeding resource usage limit. Please contact support.", "message_color": MsgColors.warning}
+    
     commands = f"""/bin/sh /mnt/tmates/startup.sh -k {TMATE_API_KEY} -n {uuid.uuid4()} -F"""
 
     response = ""
@@ -462,6 +543,7 @@ def create_server_task():
         container.stop()
         container.remove()
         return {"error": True, "message":"Something went wrong or the server is taking longer than expected. if this problem continues, Contact Support." + "\n\nTechnical Logs: " + container_logs, "message_color":MsgColors.error}
+
 
 
 # def allowed_file(filename):

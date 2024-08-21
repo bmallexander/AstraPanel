@@ -1,0 +1,11 @@
+{
+    "basic": {
+      "cpu_limit": 1,
+      "memory_limit": 1024  
+    },
+    "premium": {
+      "cpu_limit": 2,
+      "memory_limit": 2048
+    }
+  }
+  
