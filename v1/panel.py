@@ -467,18 +467,9 @@ def create_server_task():
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'zip'
 
-@app.route("/file_explorer")
+@app.route("/file_explorer/<container_id>")
 @requires_authorization
-def file_explorer():
-    container_id = request.args.get("container_id") 
-    
-    # Debug: Print available servers
-    available_servers = [server.container_name for server in get_user_servers()]
-
-    # Ensure that the provided container_id is in the user's list of servers
-    if container_id not in available_servers:
-        return jsonify({"error": True, "message": "Container not found or access denied"}), 403
-
+def file_explorer(container_id):
     # Try to access the container
     try:
         container = client.containers.get(container_id)
@@ -502,6 +493,7 @@ def file_explorer():
                            uploaded_files=local_files, 
                            container_files=container_files, 
                            site_title=SITE_TITLE)
+
 
 
 
