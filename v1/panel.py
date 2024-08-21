@@ -715,7 +715,7 @@ def suspend():
 def unsuspend():
     try:
         data = request.get_json()
-        server_name = data.get("name")  # Get the server name from the request
+        server_name = data.get("name")  
 
         if not check_name(server_name):
             return jsonify({"success": False, "error": "Invalid server name"}), 400
