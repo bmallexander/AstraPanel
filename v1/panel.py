@@ -82,7 +82,7 @@ def upload_to_container(container_id, file_stream, filename):
     
     # Upload the zip file to the Docker container
     try:
-        container.put_archive('/', zip_stream.read())
+        container.put_archive('/home', zip_stream.read())
     except Exception as e:
         raise Exception(f"Failed to upload file: {e}")
 
