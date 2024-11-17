@@ -5,91 +5,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home - {{ site_title }}</title>
-    <link rel="stylesheet" href="https://unpkg.com/@tabler/core@latest/dist/css/tabler.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Add custom styles if needed */
+    </style>
 </head>
 
-<body>
+<body class="bg-gray-100 font-sans leading-normal text-gray-900">
     {% include 'header.html' %}
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">My Servers</h3>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table card-table table-vcenter">
-                            <thead>
-                                <tr>
-                                    <th>Id</th>
-                                    <th>Name</th>
-                                    <th>SSH Cmd</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for server in servers %}
-                                <tr class="{% if (server.id + 1) % 2 == 0 %}bg-light{% endif %}">
-                                    <td>{{ server.id + 1 }}.</td>
-                                    <td class="user-select-all">{{ server.container_name }}</td>
-                                    <td class="user-select-all">{{ server.ssh_session_line }}</td>
-                                    <td class="text-center">
-                                        {% if server.status == 1 %}
-                                        <button class="btn btn-danger btn-icon" title="Stop" onclick="stop('{{ user.username }}/{{ server.container_name }}')">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                                                <path fill="none" d="M0 0h24v24H0z" />
-                                                <path d="M6 6h12v12H6z" />
-                                            </svg>
-                                        </button>
-                                        {% else %}
-                                        <button class="btn btn-success btn-icon" title="Start" onclick="start('{{ user.username }}/{{ server.container_name }}')">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                                                <path fill="none" d="M0 0h24v24H0z" />
-                                                <path d="M8 5v14l11-7z" />
-                                            </svg>
-                                        </button>
-                                        {% endif %}
-                                        <button class="btn btn-warning btn-icon" title="Restart" onclick="restart('{{ user.username }}/{{ server.container_name }}')">
-                                            ↻
-                                        </button>   
-                                        <button class="btn btn-info btn-icon" title="Console" onclick="open_console('{{ user.username }}/{{ server.container_name }}')">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="24" height="24">
-                                                <rect height="10.5" width="12.5" y="2.75" x="1.75"></rect>
-                                                <path d="m8.75 10.25h2.5m-6.5-4.5 2.5 2.25-2.5 2.25"></path>
-                                            </svg>
-                                        </button>
-                                        <button class="btn btn-outline-danger btn-icon" title="Delete" onclick="remove('{{ user.username }}/{{ server.container_name }}')">
-                                            ✖
-                                        </button>
-                                        <!-- New Button for File Explorer -->
-                                        <!-- <button class="btn btn-secondary btn-icon" title="File Explorer" onclick="open_file_explorer('{{ user.username }}/{{ server.container_name }}')">
-                                            📁
-                                        </button> -->
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                                {% if servers_count == 0 %}
-                                <tr>
-                                    <td colspan="4" class="text-muted text-center">You don't have any servers</td>
-                                </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
-                    </div>
+
+    <div class="container mx-auto mt-8 px-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Servers Table -->
+            <div class="col-span-2 bg-white shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl font-bold text-gray-800 mb-6">My Servers</h3>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full table-auto text-sm text-left text-gray-600">
+                        <thead>
+                            <tr class="bg-gray-200">
+                                <th class="px-4 py-3 font-medium text-gray-700">ID</th>
+                                <th class="px-4 py-3 font-medium text-gray-700">Name</th>
+                                <th class="px-4 py-3 font-medium text-gray-700">SSH Command</th>
+                                <th class="px-4 py-3 font-medium text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for server in servers %}
+                            <tr class="{% if (server.id + 1) % 2 == 0 %}bg-gray-50{% endif %}">
+                                <td class="px-4 py-3">{{ server.id + 1 }}.</td>
+                                <td class="px-4 py-3 text-truncate" style="max-width: 150px;">{{ server.container_name }}</td>
+                                <td class="px-4 py-3 text-truncate" style="max-width: 200px;">{{ server.ssh_session_line }}</td>
+                                <td class="px-4 py-3 text-center space-x-2">
+                                    {% if server.status == 1 %}
+                                    <button class="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition duration-200" title="Stop" onclick="stop('{{ user.username }}/{{ server.container_name }}')">
+                                        <i class="fe fe-stop"></i>
+                                    </button>
+                                    {% else %}
+                                    <button class="bg-green-600 text-white p-2 rounded-full hover:bg-green-700 transition duration-200" title="Start" onclick="start('{{ user.username }}/{{ server.container_name }}')">
+                                        <i class="fe fe-play"></i>
+                                    </button>
+                                    {% endif %}
+
+                                    <button class="bg-yellow-500 text-white p-2 rounded-full hover:bg-yellow-600 transition duration-200" title="Restart" onclick="restart('{{ user.username }}/{{ server.container_name }}')">
+                                        <i class="fe fe-refresh-cw"></i>
+                                    </button>
+
+                                    <button class="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition duration-200" title="Console" onclick="open_console('{{ user.username }}/{{ server.container_name }}')">
+                                        <i class="fe fe-terminal"></i>
+                                    </button>
+
+                                    <button class="bg-gray-300 text-gray-800 p-2 rounded-full hover:bg-gray-400 transition duration-200" title="Delete" onclick="remove('{{ user.username }}/{{ server.container_name }}')">
+                                        <i class="fe fe-trash-2"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if servers_count == 0 %}
+                            <tr>
+                                <td colspan="4" class="text-center text-gray-500 py-4">You don't have any servers</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            
-            <div class="col-lg-4">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h4 class="card-title">Currency Balance</h4>
-                        <p>Your current balance: <strong>{{ currency_balance }}</strong></p>
-                    </div>
-                </div>
+
+            <!-- Currency Balance -->
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <h4 class="text-2xl font-bold text-gray-800 mb-4">Currency Balance</h4>
+                <p class="text-lg text-gray-700">Your current balance: <strong class="text-blue-600">{{ currency_balance }}</strong></p>
             </div>
+
         </div>
     </div>
+
     <script src="{{ url_for('static', filename='js/home.js') }}"></script>
     <script>
         function open_file_explorer(containerId) {

@@ -5,33 +5,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deploy New - {{ site_title }}</title>
-    <link rel="stylesheet" href="https://unpkg.com/@tabler/core@latest/dist/css/tabler.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
 </head>
 
-<body>
+<body class="bg-gray-100 font-sans">
     {% include 'header.html' %}
-    <div class="container mt-4">
-        <div class="row justify-content-center">
-            <div class="col-lg-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Create New Server</h3>
+    
+    <div class="container mx-auto mt-8">
+        <div class="flex justify-center">
+            <div class="w-full max-w-md">
+                <div class="bg-white shadow-lg rounded-lg">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-2xl font-semibold text-gray-800">Create New Server</h3>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Image:</label>
-                            <select class="form-select" id="os_list">
+                    <div class="p-6">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-medium mb-2">Image:</label>
+                            <select class="form-select block w-full border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                                 {% for image in images %}
                                 <option value="{{ image }}">{{ image }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <button class="btn btn-primary w-100" onclick="create_vm()">Create</button>
+                        <button class="btn-primary w-full py-2 px-4 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700 transition duration-200" onclick="create_vm()">Create</button>
                     </div>
                 </div>
-                <div class="new_term mt-4"></div>
+                <div class="new_term mt-4 p-4 bg-white shadow-md rounded-lg"></div>
             </div>
         </div>
     </div>
@@ -46,10 +47,10 @@
             2: "lightblue"
         };
         window.create_new_vm = async function(image) {
-            window.add_new_log("Connected to the backend.", {color: "gray"});
+            window.add_new_log("Connected to the backend.", { color: "gray" });
             var data = await (await window.get(`/server_creation?image=${image}`)).json();
             if (data.error) {
-                window.add_new_log(data.message, {color: window.colors[data.message_color]});
+                window.add_new_log(data.message, { color: window.colors[data.message_color] });
                 setTimeout(() => {
                     window.location.href = "/";
                 }, 10000);
@@ -66,6 +67,7 @@
         async function create_vm() {
             let mainbox = document.querySelector(".new_term");
             let hr = document.createElement("hr");
+            hr.className = "my-4 border-gray-300";
             mainbox.append(hr);
             document.querySelector("button").disabled = document.querySelector("select").disabled = true;
             document.querySelector(".form-label").style.color = "gray";

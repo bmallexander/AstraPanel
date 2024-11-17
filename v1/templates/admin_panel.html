@@ -1,34 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - {{ site_title }}</title>
-    <script src="static/js/suspend.js"></script> 
+    <script src="static/js/suspend.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Admin Panel</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Container Name</th>
-                <th>Status</th>
-                <th>CPU Usage</th>
-                <th>Memory Usage</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for server in servers %}
-            <tr>
-                <td>{{ server.name }}</td>
-                <td>{{ server.status }}</td>
-                <td>{{ server.resources[0] }}</td>
-                <td>{{ server.resources[1] }}</td>
-                <td>
-                    <button onclick="suspendServer('{{ server.name }}')">Suspend</button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <!-- Sidebar (Optional) -->
+    <div class="w-64 h-screen bg-gray-800 text-white fixed top-0 left-0 p-4">
+        <h2 class="text-2xl font-semibold">Admin Dashboard</h2>
+        <ul class="mt-6 space-y-4">
+            <li><a href="#" class="text-gray-300 hover:text-white">Overview</a></li>
+            <li><a href="#" class="text-gray-300 hover:text-white">Servers</a></li>
+            <li><a href="#" class="text-gray-300 hover:text-white">Settings</a></li>
+            <li><a href="#" class="text-gray-300 hover:text-white">Log Out</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 p-6">
+        <h1 class="text-3xl font-semibold text-gray-900 mb-6">Admin Panel</h1>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Servers</h2>
+
+            <!-- Server Table -->
+            <div class="overflow-x-auto bg-white rounded-lg shadow-sm">
+                <table class="w-full table-auto text-sm text-left">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-3 font-medium text-gray-700">Container Name</th>
+                            <th class="px-4 py-3 font-medium text-gray-700">Status</th>
+                            <th class="px-4 py-3 font-medium text-gray-700">CPU Usage</th>
+                            <th class="px-4 py-3 font-medium text-gray-700">Memory Usage</th>
+                            <th class="px-4 py-3 font-medium text-gray-700">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600">
+                        {% for server in servers %}
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-3">{{ server.name }}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-3 py-1 rounded-full {{ 'bg-green-500' if server.status == 'Active' else 'bg-red-500' }} text-white text-xs">
+                                    {{ server.status }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">{{ server.resources[0] }}%</td>
+                            <td class="px-4 py-3">{{ server.resources[1] }}%</td>
+                            <td class="px-4 py-3 text-center">
+                                <button onclick="suspendServer('{{ server.name }}')" class="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600">
+                                    Suspend
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </body>
+
 </html>

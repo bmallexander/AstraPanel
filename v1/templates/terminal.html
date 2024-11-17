@@ -1,31 +1,25 @@
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <title>pyxterm.js</title>
-    <style>
-        html {
-            font-family: arial;
-        }
-    </style>
     <link rel="stylesheet" href="https://unpkg.com/xterm@4.11.0/css/xterm.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body style="overflow-y: hidden;background: black;">
-    <div style="background: white;width: 100%;padding: 8px; margin: -8px 0px 0px -8px; font-weight: bold">
-        <a href="#" style="font-size: 1.4em; text-decoration: none; color:black">{{ SITE_TITLE }} -
-            Terminal</a>&nbsp;&nbsp;&nbsp;
-        </a>
-        <span style="font-size: small">status:
-            <span style="font-size: small" id="status">connecting...</span></span>
+<body class="bg-black overflow-hidden">
+    <div class="bg-white w-full p-2 font-bold flex justify-between items-center">
+        <a href="#" class="text-xl text-black no-underline">{{ SITE_TITLE }} - Terminal</a>
+        <span class="text-sm">status: <span id="status" class="text-gray-700">connecting...</span></span>
     </div>
-    <div style="width: 100%; height: calc(100% - 27.5px); margin-top: 5px;" id="terminal"></div>
+    <div id="terminal" class="w-full h-[calc(100%-2rem)] mt-1"></div>
+
     <!-- xterm -->
     <script src="https://unpkg.com/xterm@4.11.0/lib/xterm.js"></script>
     <script src="https://unpkg.com/xterm-addon-fit@0.5.0/lib/xterm-addon-fit.js"></script>
     <script src="https://unpkg.com/xterm-addon-web-links@0.4.0/lib/xterm-addon-web-links.js"></script>
-    <script src="https://unpkg.com/xterm-addon-search@0.8.0/lib/xterm-addon-sear
-ch.js"></script>
+    <script src="https://unpkg.com/xterm-addon-search@0.8.0/lib/xterm-addon-search.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
 
     <script>
@@ -35,7 +29,6 @@ ch.js"></script>
             scrollback: true,
         });
         term.attachCustomKeyEventHandler(customKeyEventHandler);
-        // https://github.com/xtermjs/xterm.js/issues/2941
         const fit = new FitAddon.FitAddon();
         term.loadAddon(fit);
         term.loadAddon(new WebLinksAddon.WebLinksAddon());
@@ -71,13 +64,11 @@ ch.js"></script>
 
         socket.on("connect", () => {
             fitToscreen();
-            status.innerHTML =
-                '<span style="background-color: lightgreen;">connected</span>';
+            status.innerHTML = '<span class="bg-green-200">connected</span>';
         });
 
         socket.on("disconnect", () => {
-            status.innerHTML =
-                '<span style="background-color: #ff8383;">disconnected</span>';
+            status.innerHTML = '<span class="bg-red-200">disconnected</span>';
         });
 
         function fitToscreen() {
@@ -96,9 +87,6 @@ ch.js"></script>
             };
         }
 
-        /**
-         * Handle copy and paste events
-         */
         function customKeyEventHandler(e) {
             if (e.type !== "keydown") {
                 return true;
@@ -106,59 +94,48 @@ ch.js"></script>
             if (e.ctrlKey && e.shiftKey) {
                 const key = e.key.toLowerCase();
                 if (key === "v") {
-                    // ctrl+shift+v: paste whatever is in the clipboard
                     navigator.clipboard.readText().then((toPaste) => {
                         term.writeText(toPaste);
                     });
                     return false;
                 } else if (key === "c" || key === "x") {
-                    // ctrl+shift+x: copy whatever is highlighted to clipboard
-
-                    // 'x' is used as an alternate to 'c' because ctrl+c is taken
-                    // by the terminal (SIGINT) and ctrl+shift+c is taken by the browser
-                    // (open devtools).
-                    // I'm not aware of ctrl+shift+x being used by anything in the terminal
-                    // or browser
                     const toCopy = term.getSelection();
                     navigator.clipboard.writeText(toCopy);
                     term.focus();
                     return false;
-                } else if (key === "h"){
-                    let blur = document.createElement("div");
-                    blur.setAttribute("style", "user-select:none;position: fixed; top:0px; left:0px; height:100%; width:100%; background:rgba(0,0,0,0.15); z-index: 9999999999999");
-                    blur.innerHTML = `<div style="
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    background: white;
-    border: 1px solid rgba(0,0,0,0.5);
-    box-shadow: 0px 0px 5px 5px rgba(255, 255, 255, 0.5);
-    padding: 15px;
-    border-radius: 20px;
-    transform: translate(-50%, -50%);
-    max-width: 85%;
-"><label style="font-weight: bold;font-size: 1.5em;">Copy/Paste box:</label><br/><br><textarea id="copypasebox" style="width: 764px; height: 425px; border: 1px dashed #0071E3; outline: none; font-size: 1.5em; max-width: 100%;" spellcheck="false"></textarea>
-<br/><br><div><button id="pastebtn" style="
-    padding: 7.5px;
-    margin: 0px 10px;
-">Paste</button><button id="copybtn" style="
-    padding: 7.5px;
-    margin: 0px 10px;
-">Copy</button></div></div>`;
-                    document.body.append(blur);
-                    let textbox = document.getElementById("copypasebox"), copybtn = document.getElementById("copybtn"), pastebtn = document.getElementById("pastebtn");
-                    textbox.value = term.getSelection();
-                    copybtn.onclick = ()=>{
-                        navigator.clipboard.writeText(textbox.value);
-                        document.body.removeChild(blur);
-                    };
-                    pastebtn.onclick = ()=>{
-                        term.write(textbox.value);
-                        document.body.removeChild(blur);
-                    };
+                } else if (key === "h") {
+                    showCopyPasteBox();
                 }
             }
             return true;
+        }
+
+        function showCopyPasteBox() {
+            let blur = document.createElement("div");
+            blur.className = "fixed top-0 left-0 h-full w-full bg-black bg-opacity-30 z-50 flex items-center justify-center";
+            blur.innerHTML = `
+                <div class="bg-white border border-gray-300 shadow-lg p-5 rounded-lg max-w-lg w-full">
+                    <label class="font-bold text-xl">Copy/Paste box:</label><br/><br>
+                    <textarea id="copypasebox" class="w-full h-64 border-dashed border-blue-500 outline-none text-lg" spellcheck="false"></textarea>
+                    <br/><br>
+                    <div class="flex justify-between">
+                        <button id="pastebtn" class="bg-blue-600 text-white p-2 rounded">Paste</button>
+                        <button id="copybtn" class="bg-blue-600 text-white p-2 rounded">Copy</button>
+                    </div>
+                </div>`;
+            document.body.append(blur);
+            let textbox = document.getElementById("copypasebox"), 
+                copybtn = document.getElementById("copybtn"), 
+                pastebtn = document.getElementById("pastebtn");
+            textbox.value = term.getSelection();
+            copybtn.onclick = () => {
+                navigator.clipboard.writeText(textbox.value);
+                document.body.removeChild(blur);
+            };
+            pastebtn.onclick = () => {
+                term.write(textbox.value);
+                document.body.removeChild(blur);
+            };
         }
 
         const wait_ms = 50;
